@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 249 250 251;
+    --foreground: 31 41 55;
+    --card: 255 255 255;
+    --card-foreground: 31 41 55;
+    --primary: 139 92 246;
+    --primary-foreground: 255 255 255;
+    --secondary: 167 139 250;
+    --accent: 243 244 246;
+    --accent-foreground: 31 41 55;
+    --muted: 243 244 246;
+    --muted-foreground: 107 114 128;
+    --border: 229 231 235;
+    --input: 229 231 235;
+    --ring: 139 92 246;
+  }
+
+  .dark {
+    --background: 15 15 17;
+    --foreground: 249 250 251;
+    --card: 26 26 29;
+    --card-foreground: 249 250 251;
+    --primary: 139 92 246;
+    --primary-foreground: 255 255 255;
+    --secondary: 167 139 250;
+    --accent: 39 39 42;
+    --accent-foreground: 249 250 251;
+    --muted: 39 39 42;
+    --muted-foreground: 161 161 170;
+    --border: 39 39 42;
+    --input: 39 39 42;
+    --ring: 139 92 246;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-400 dark:to-purple-500 bg-clip-text text-transparent;
+  }
+
+  .glass {
+    @apply bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+}
+
+.markdown {
+  @apply leading-relaxed space-y-4;
+}
+
+.markdown h1 {
+  @apply text-2xl font-semibold text-foreground;
+}
+
+.markdown h2 {
+  @apply text-xl font-semibold text-foreground;
+}
+
+.markdown h3 {
+  @apply text-lg font-semibold text-foreground;
+}
+
+.markdown p {
+  @apply text-base text-foreground;
+}
+
+.markdown ul {
+  @apply list-disc pl-6 space-y-1;
+}
+
+.markdown ol {
+  @apply list-decimal pl-6 space-y-1;
+}
+
+.markdown code {
+  @apply px-2 py-1 bg-muted rounded text-sm font-mono;
+}
+
+.markdown pre {
+  @apply bg-gray-950 dark:bg-gray-900 text-gray-100 rounded-lg p-4 overflow-auto;
+}
+
+.markdown blockquote {
+  @apply border-l-4 border-primary/30 pl-4 italic text-muted-foreground;
+}

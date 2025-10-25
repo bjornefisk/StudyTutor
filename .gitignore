@@ -1,0 +1,47 @@
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secrets
+.env
+.env.*
+
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+frontend/.turbo/
+frontend/out/
+frontend/dist/
+dist/
+npm-debug.log*
+frontend/npm-debug.log*
+yarn-error.log*
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.production.local
+frontend/.env.test.local
+frontend/.env.*
+*.log
+
+# App artifacts
+storage/
+# Cache
+storage/pubchem_cache/
+
+# Data (keep repo light and private)
+data/**
+!data/.gitkeep
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
