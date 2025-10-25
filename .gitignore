@@ -5,39 +5,35 @@
 .vscode/
 .idea/
 
-# Python
+# Python artifacts
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
 venv/
+.mypy_cache/
+.pytest_cache/
+.coverage*
+htmlcov/
 
-# Secrets
+# Environment files
 .env
 .env.*
+frontend/.env*
 
-# Node / Next.js
+# Node / Next.js artifacts
 node_modules/
-frontend/node_modules/
 .next/
-frontend/.next/
-frontend/.turbo/
-frontend/out/
-frontend/dist/
+.turbo/
+out/
 dist/
 npm-debug.log*
-frontend/npm-debug.log*
 yarn-error.log*
-frontend/.env.local
-frontend/.env.development.local
-frontend/.env.production.local
-frontend/.env.test.local
-frontend/.env.*
+pnpm-debug.log*
 *.log
 
-# App artifacts
-storage/
-# Cache
-storage/pubchem_cache/
+# Application storage & cache
+storage/**
+!storage/.gitkeep
 
 # Data (keep repo light and private)
 data/**
