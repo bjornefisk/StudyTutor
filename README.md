@@ -1,296 +1,520 @@
-# AI Tutor
+# 🎓 AI Tutor - Your Personal Study Companion
 
-A local-first AI study companion that helps you learn from your own materials. Upload your PDFs, textbooks, or notes, and chat with an AI tutor that actually knows your content. Everything runs on your machine - no data leaves your computer.
+<div align="center">
 
-## What makes this different?
+**A local-first AI study companion that learns from YOUR materials**
 
-Most AI tutors are generic. This one learns from *your* materials. Upload your course PDFs, lecture notes, or textbooks, and get personalized answers based on your actual content. Perfect for students who want AI help that's actually relevant to their coursework.
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
+
+</div>
+
+---
+
+## 🌟 What Makes This Different?
+
+Most AI tutors are **generic**. This one learns from ***your*** materials. Upload your course PDFs, lecture notes, or textbooks, and get personalized answers based on your actual content. Perfect for students who want AI help that's actually relevant to their coursework.
 
 ### ✨ Key Features
 
-- **💬 Intelligent Chat**: RAG-powered conversations that reference your actual study materials
-- **📚 AI Flashcard Generation**: Automatically extract key concepts and create study flashcards from your documents
-- **📝 Smart Note-Taking**: Live note-taking with AI-powered suggestions from your documents
-- **📥 Anki Export**: Export flashcard decks to Anki format (.apkg) for spaced repetition
-- **🎴 Built-in Review Mode**: Study flashcards with flip animations and track your progress
-- **🔗 Automatic Citations**: Notes automatically link to source documents with proper citations
-- **📂 Document Management**: Upload PDFs, DOCX, TXT, and Markdown files
-- **🎯 Multi-Query Retrieval**: Improved answer accuracy with parallel query variations
-- **🌓 Modern UI**: Beautiful dark/light theme with responsive design
+| Feature | Description |
+|---------|-------------|
+| 💬 **Intelligent Chat** | RAG-powered conversations that reference your actual study materials |
+| 📚 **AI Flashcard Generation** | Multi-pass deep analysis creates conceptual questions, not memorization |
+| 📝 **Smart Note-Taking** | Live RAG-powered suggestions as you write |
+| 🔗 **Automatic Citations** | Notes link to source documents with page numbers |
+| 📥 **Anki Export** | Export flashcard decks to Anki format (.apkg) |
+| 🎴 **Review Mode** | Built-in spaced repetition with progress tracking |
+| 🎯 **Multi-Query Retrieval** | 30-40% better accuracy with parallel query variations |
+| 🔒 **Privacy-First** | Everything runs locally - your data never leaves your machine |
 
-## Quick Start
+---
 
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## 🚀 Quick Start
 
-2. **Add your study materials:**
-   - Drop PDFs, DOCX, TXT, or Markdown files into the `data/` folder
-   - Run `python ingest.py` to build the search index
+### Prerequisites
 
-3. **Start chatting:**
-   ```bash
-   streamlit run app.py
-   ```
+- Python 3.9 or higher
+- Node.js 18 or higher
+- (Optional) Ollama for local LLM inference
+- (Optional) OpenRouter API key for hosted models
 
-That's it! Open your browser and start asking questions about your materials.
-
-## Architecture Overview
-
-This is a full-stack RAG (Retrieval-Augmented Generation) application:
-
-- **Backend** (`backend/`): FastAPI server handling chat, file uploads, and document processing
-- **Frontend** (`frontend/`): Modern Next.js interface for chatting and file management  
-- **Core Engine** (`tutor/core/`): Python modules for embeddings, search, and LLM integration
-- **CLI Tool** (`quick.cli.py`): Terminal-based alternative if you prefer command line
-
-## Detailed Setup
-
-### Backend Setup
-
-1. **Create virtual environment:**
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate          # Windows: .venv\Scripts\activate
-   python -m pip install --upgrade pip
-   pip install -r backend/requirements.txt
-   ```
-
-2. **Configure your environment:**
-   ```bash
-   cp .env-EXAMPLE .env
-   # Edit .env with your preferred backends and API keys
-   ```
-
-3. **Process your documents:**
-   ```bash
-   python ingest.py
-   ```
-
-4. **Start the API server:**
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
-
-### Frontend Setup
-
-1. **Install Node.js dependencies:**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Configure API connection:**
-   ```bash
-   cp .env.example .env.local
-   # Adjust NEXT_PUBLIC_API_URL if needed
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open http://localhost:3000** and start chatting!
-
-## Configuration Options
-
-### Embedding Models
-
-Choose how to generate embeddings for your documents:
+### 1️⃣ Clone & Install Backend
 
 ```bash
-# Local sentence-transformer (default, no API key needed)
-EMBEDDINGS_BACKEND=sbert
-SBERT_MODEL=sentence-transformers/all-MiniLM-L6-v2
+# Clone the repository
+git clone https://github.com/yourusername/tutorV2.git
+cd tutorV2
 
-# Hosted embeddings via OpenRouter (better quality, requires API key)
-EMBEDDINGS_BACKEND=openrouter
-OPENROUTER_API_KEY=<YOUR_OPENROUTER_API_KEY>
-OPENROUTER_EMBED_MODEL=thenlper/gte-large
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Local embeddings via Ollama (requires Ollama running)
-EMBEDDINGS_BACKEND=ollama
-OLLAMA_EMBED_MODEL=nomic-embed-text
+# Install dependencies
+pip install -r backend/requirements.txt
 ```
 
-### Language Models
-
-Choose your AI tutor's brain:
+### 2️⃣ Configure Environment
 
 ```bash
-# Hosted models via OpenRouter (recommended for best results)
-LLM_BACKEND=openrouter
-OPENROUTER_CHAT_MODEL=openrouter/auto
+# Copy example env file
+cp .env-EXAMPLE .env
 
-# Local models via Ollama (completely private, requires Ollama)
+# Edit .env with your settings
+# Minimum required: Choose LLM backend (ollama or openrouter)
+```
+
+### 3️⃣ Add Study Materials & Build Index
+
+```bash
+# Add your PDFs, DOCX, TXT, or MD files to data/ folder
+cp /path/to/your/materials/*.pdf data/
+
+# Build the search index
+python ingest.py
+```
+
+### 4️⃣ Start Backend
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+### 5️⃣ Install & Start Frontend
+
+```bash
+# In a new terminal
+cd frontend
+npm install
+
+# Configure frontend (optional)
+cp .env.example .env.local
+
+# Start dev server
+npm run dev
+```
+
+### 6️⃣ Open & Use
+
+Open **http://localhost:3000** in your browser and start learning! 🎉
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+- **[FastAPI](https://fastapi.tiangolo.com/)** - High-performance async API framework
+- **[LangChain](https://python.langchain.com/)** - LLM orchestration (optional)
+- **[FAISS](https://github.com/facebookresearch/faiss)** - Vector similarity search
+- **[Sentence Transformers](https://www.sbert.net/)** - Document embeddings
+- **[PyPDF2](https://pypdf2.readthedocs.io/)** - PDF text extraction
+- **[python-docx](https://python-docx.readthedocs.io/)** - DOCX processing
+
+### Frontend
+- **[Next.js 14](https://nextjs.org/)** - React framework with App Router
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript
+- **[TailwindCSS](https://tailwindcss.com/)** - Utility-first CSS framework
+- **[Axios](https://axios-http.com/)** - HTTP client
+- **[React Hooks](https://reactjs.org/docs/hooks-intro.html)** - State management
+
+### AI/ML
+- **[Ollama](https://ollama.ai/)** - Local LLM inference (optional)
+- **[OpenRouter](https://openrouter.ai/)** - Hosted LLM API (optional)
+- **Embedding Models**: sentence-transformers, OpenAI, Ollama
+
+### Storage
+- **JSON** - Notes and flashcards
+- **JSONL** - Chat history
+- **FAISS Index** - Vector embeddings
+
+---
+
+## 📚 Features Deep Dive
+
+### 💬 RAG-Powered Chat
+
+<details>
+<summary>Click to expand</summary>
+
+**What is RAG?**
+Retrieval-Augmented Generation combines document search with LLM generation for accurate, source-grounded answers.
+
+**How it works:**
+1. Your question → Embedding model → Vector
+2. Vector similarity search → Find relevant document chunks
+3. Chunks + Question → LLM → Grounded answer
+4. Citations show which documents were used
+
+**Multi-Query Retrieval:**
+- Generates 2-3 variations of your question
+- Searches with each variation
+- Combines and ranks results
+- 30-40% better accuracy
+
+</details>
+
+### 📚 AI Flashcard Generation
+
+<details>
+<summary>Click to expand</summary>
+
+**Unlike traditional flashcards, these test UNDERSTANDING, not memorization.**
+
+**Two-Pass AI System:**
+1. **Concept Extraction**: AI reads full document, identifies key concepts
+2. **Question Generation**: Creates conceptual questions testing understanding
+
+**Example Quality:**
+- ❌ Bad: "What is mitosis?" (memorization)
+- ✅ Good: "How does mitosis ensure genetic consistency in daughter cells?" (understanding)
+
+**Difficulty Levels:**
+- **Easy**: Foundational understanding (definitions, basic concepts)
+- **Medium**: Application & analysis (how/why questions) ⭐ Recommended
+- **Hard**: Synthesis & evaluation (complex problem-solving)
+
+**Features:**
+- Analyzes full documents (no length limit)
+- Multi-pass deep comprehension
+- Built-in review mode with flip animations
+- Progress tracking & spaced repetition
+- Export to Anki (.apkg format)
+
+</details>
+
+### 📝 Smart Note-Taking
+
+<details>
+<summary>Click to expand</summary>
+
+**Active learning meets RAG: Write notes while AI suggests related content.**
+
+**How it works:**
+1. Start typing your notes
+2. AI searches your documents in real-time
+3. Relevant passages appear in sidebar
+4. Click to link sources automatically
+5. Export with proper citations
+
+**Features:**
+- Real-time suggestions (1-second debounce)
+- Relevance scoring (High/Medium/Low)
+- Source snippets with page numbers
+- Tag organization
+- Search & filter
+- Markdown support
+- Auto-citation tracking
+- Bulk export
+
+**Why it's powerful:**
+- Combines writing (retention) with retrieval (comprehension)
+- Discover connections across documents
+- Build comprehensive study guides
+- Perfect for research with auto-citations
+
+</details>
+
+---
+
+## ⚙️ Configuration
+
+### LLM Backend Options
+
+<details>
+<summary>Option 1: Ollama (Local, Private)</summary>
+
+```bash
+# Install Ollama
+curl https://ollama.ai/install.sh | sh
+
+# Pull a model
+ollama pull llama3
+
+# Configure .env
 LLM_BACKEND=ollama
 OLLAMA_MODEL=llama3
 ```
 
+✅ Completely private  
+✅ No API costs  
+✅ Fast on good hardware  
+❌ Requires powerful machine  
+
+</details>
+
+<details>
+<summary>Option 2: OpenRouter (Hosted, High Quality)</summary>
+
+```bash
+# Get API key from openrouter.ai
+# Configure .env
+LLM_BACKEND=openrouter
+OPENROUTER_API_KEY=your_key_here
+OPENROUTER_CHAT_MODEL=openrouter/auto
+```
+
+✅ High quality responses  
+✅ Works on any machine  
+✅ Access to latest models  
+❌ Requires API key  
+❌ Pay per use  
+
+</details>
+
+### Embedding Options
+
+```bash
+# Local (Default) - No API key needed
+EMBEDDINGS_BACKEND=sbert
+SBERT_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# Ollama - Requires Ollama running
+EMBEDDINGS_BACKEND=ollama
+OLLAMA_EMBED_MODEL=nomic-embed-text
+
+# OpenRouter - Better quality, requires API key
+EMBEDDINGS_BACKEND=openrouter
+OPENROUTER_EMBED_MODEL=thenlper/gte-large
+```
+
 ### Document Processing
 
-Fine-tune how your documents are processed:
-
 ```bash
-TOP_K=5             # How many document chunks to use for each answer
-CHUNK_TOKENS=800    # Size of each text chunk
-CHUNK_OVERLAP=80    # Overlap between chunks for better context
+TOP_K=5                    # Chunks per answer
+CHUNK_TOKENS=800           # Chunk size
+CHUNK_OVERLAP=80           # Overlap for context
+USE_MULTI_QUERY=true       # Better retrieval
+NUM_QUERY_VARIATIONS=3     # Query variations
 ```
 
-### Multi-Query Retrieval (NEW!)
+---
 
-Improve answer quality by 30-40% with multi-query retrieval. This feature automatically generates multiple variations of your question and combines results for better accuracy:
+## 📖 Usage Guide
 
-```bash
-USE_MULTI_QUERY=true           # Enable/disable multi-query retrieval (default: true)
-NUM_QUERY_VARIATIONS=3         # Number of query variations to generate (default: 3)
-```
-
-**How it works:**
-- Takes your question and generates 2-3 alternative phrasings
-- Searches with each variation to capture different perspectives
-- Combines and ranks results for comprehensive answers
-- Automatically falls back to single-query if LLM is unavailable
-
-**Example:** Asking "What is photosynthesis?" also searches for "Explain photosynthesis" and "photosynthesis definition and process" to ensure complete coverage.
+### Chat Mode
+1. Click **💬 Chat** tab
+2. Type your question
+3. Get answers with source citations
+4. Toggle Multi-Query for better results
 
 ### Flashcard Generation
-
-The AI tutor uses **multi-pass deep analysis** to generate conceptual flashcards that test true understanding, not just memorization. Unlike RAG-based chat, flashcards send the **full document** to the LLM for comprehensive comprehension.
-
-**How It Works:**
-1. **Pass 1 - Concept Extraction**: AI reads the entire document and identifies key concepts, theories, and relationships
-2. **Pass 2 - Conceptual Questions**: AI generates questions that test understanding, application, and analysis of those concepts
-
-**Usage:**
-1. Navigate to the **Flashcards** tab in the web interface
+1. Click **📚 Flashcards** tab
 2. Click "Generate New Deck"
-3. Select the documents you want to create flashcards from
-4. Choose difficulty level (easy, medium, or hard)
-5. Set the number of cards to generate
+3. Select documents
+4. Choose difficulty (Easy/Medium/Hard)
+5. Set number of cards
 6. Click "Generate Flashcards"
+7. Study with built-in review mode
+8. Export to Anki if desired
 
-**Difficulty Levels:**
-- **Easy**: Basic understanding and recall of core concepts
-  - Question types: definitions, basic "what is" questions, simple examples
-  - Tests foundational understanding
-  
-- **Medium**: Application and analysis of concepts ⭐ Recommended
-  - Question types: how/why questions, applications, comparisons, cause-effect
-  - Tests analytical thinking and connections between ideas
-  
-- **Hard**: Synthesis, evaluation, and deep analysis
-  - Question types: synthesis across concepts, critical analysis, predictions, complex problem-solving
-  - Tests expert-level understanding with nuanced thinking
-
-**What Makes This Different:**
-- ❌ **NOT**: "What is photosynthesis?" (simple recall)
-- ✅ **YES**: "Why do plants perform photosynthesis in daylight but not at night?" (conceptual understanding)
-
-- ❌ **NOT**: "Define mitosis" (memorization)
-- ✅ **YES**: "How does mitosis ensure genetic consistency in daughter cells?" (application)
-
-**Features:**
-- **Deep Comprehension**: Analyzes full documents (no length limit), not just excerpts
-- **Conceptual Questions**: Tests understanding, not memorization
-- **Multi-Pass Analysis**: Identifies concepts first, then generates targeted questions
-- **Review Mode**: Built-in flashcard review with flip animations
-- **Progress Tracking**: Tracks review count and accuracy for each card
-- **Spaced Repetition**: Automatically schedules next review based on performance
-- **Anki Export**: Export decks to `.apkg` format for use in Anki
-- **Source Tracking**: Each card links back to the source document
-
-**Example Use Cases:**
-- Generate conceptual understanding questions from lecture slides
-- Create application-based flashcards from textbook chapters
-- Test synthesis and analysis of complex topics
-- Build exam prep decks that match professor question styles
-
-### Smart Note-Taking
-
-The AI tutor includes an intelligent note-taking system that bridges active learning with your RAG system. As you take notes, the AI suggests related content from your uploaded documents in real-time.
-
-**How It Works:**
-1. **Live Suggestions**: As you type, the system uses RAG to find relevant content from your documents
-2. **Auto-Linking**: Click suggestions to automatically link source documents to your notes
-3. **Citation Tracking**: All linked sources are tracked with page numbers and relevance scores
-4. **Export with Citations**: Export notes as markdown with properly formatted citations
-
-**Usage:**
-1. Navigate to the **Notes** tab in the web interface
+### Note-Taking
+1. Click **📝 Notes** tab
 2. Click "New Note"
 3. Start typing your notes
-4. Watch the sidebar populate with related content from your documents
-5. Click suggestions to add them as sources
-6. Export notes with citations when done
+4. Watch suggestions populate in sidebar
+5. Click suggestions to link sources
+6. Add tags for organization
+7. Export as markdown with citations
 
-**Features:**
-- **Real-Time Suggestions**: Suggestions update as you type (1-second debounce)
-- **Relevance Scoring**: High/Medium/Low relevance indicators
-- **Source Preview**: See snippets from source documents
-- **Tag Organization**: Organize notes with custom tags
-- **Search & Filter**: Find notes by content or tags
-- **Markdown Support**: Full markdown formatting in note editor
-- **Bulk Export**: Export all notes as a single markdown document
-- **Smart Citations**: Automatic deduplication and formatting
+---
 
-**Why This is Powerful:**
-- **Active Learning**: Combines writing (retention) with retrieval (RAG)
-- **Connected Knowledge**: See how concepts relate across documents
-- **Study Guide Creation**: Build comprehensive study guides with citations
-- **Research Notes**: Perfect for research papers with auto-citations
+## 🏗️ Project Structure
 
-**Example Workflow:**
-1. Upload lecture slides and textbook chapters
-2. Create notes while studying
-3. AI suggests related concepts from other materials
-4. Link sources to build comprehensive understanding
-5. Export notes with citations for exam review
-
-### Text-to-Speech (Optional)
-
-Add voice output to responses:
-
-```bash
-TTS_BACKEND=off     # Default, no voice
-TTS_BACKEND=pyttsx3 # Offline synthesis (requires system voice support)
+```
+tutorV2/
+├── backend/
+│   ├── main.py                 # FastAPI application
+│   └── requirements.txt        # Python dependencies
+├── frontend/
+│   ├── src/
+│   │   ├── app/               # Next.js App Router
+│   │   ├── components/        # React components
+│   │   ├── lib/               # API client & utilities
+│   │   └── types/             # TypeScript definitions
+│   ├── package.json
+│   └── tailwind.config.js
+├── tutor/
+│   └── core/
+│       ├── config.py          # Configuration
+│       ├── embeddings.py      # Embedding generation
+│       ├── indexing.py        # FAISS indexing
+│       ├── llm.py             # LLM backends
+│       ├── retrieval.py       # RAG retrieval
+│       ├── flashcards.py      # Flashcard generation
+│       ├── notes.py           # Note-taking system
+│       └── storage.py         # Data persistence
+├── data/                      # Your study materials
+├── storage/                   # Vector index & data
+│   ├── faiss.index           # FAISS vector store
+│   ├── metadata.jsonl        # Document metadata
+│   ├── chats/                # Chat history
+│   ├── flashcards/           # Flashcard decks
+│   └── notes/                # Study notes
+├── ingest.py                 # Document processing
+└── quick.cli.py              # CLI interface
 ```
 
-## Using the CLI
+---
 
-Prefer the terminal? The CLI tool works great for quick questions:
+## 🔧 Troubleshooting
+
+### Common Issues
+
+<details>
+<summary>Backend won't start</summary>
 
 ```bash
-python quick.cli.py "What is the difference between X and Y?"
+# Check Python version
+python --version  # Should be 3.9+
+
+# Reinstall dependencies
+pip install -r backend/requirements.txt
+
+# Check if port 8000 is available
+lsof -i :8000
 ```
 
-## Troubleshooting
+</details>
 
-**Empty or poor answers:**
-- Make sure you ran `python ingest.py` after adding files to `data/`
-- Check that your documents actually contain text (some PDFs are image-only)
+<details>
+<summary>Empty or poor answers</summary>
 
-**OpenRouter errors:**
-- Verify your API key is correct in `.env`
-- Check that the model names match what's available on OpenRouter
+1. Ensure you ran `python ingest.py` after adding documents
+2. Check documents actually contain text (not scanned images)
+3. Try increasing `TOP_K` in `.env`
+4. Enable multi-query retrieval
 
-**Ollama timeouts:**
-- Ensure Ollama is running: `ollama serve`
-- Pull the model: `ollama pull llama3`
+</details>
 
-**Backend rebuilds:**
-- Delete `storage/` folder to regenerate the FAISS index
-- Useful when switching embedding models
+<details>
+<summary>Flashcard generation fails</summary>
 
-## Security & Privacy
+1. Check LLM backend is running (Ollama) or API key is valid (OpenRouter)
+2. Ensure documents have sufficient content
+3. Check backend logs for errors
+4. Try with fewer cards first
 
-- **Never commit API keys** - `.env` files are gitignored for a reason
-- **Rotate leaked keys immediately** if they're accidentally exposed
-- **For production deployments**, use environment variables or secret managers
-- **All processing happens locally** - your documents never leave your machine unless you choose hosted backends
+</details>
 
-## Contributing
+<details>
+<summary>Frontend connection errors</summary>
 
-Found a bug or want to add a feature? Feel free to open an issue or submit a pull request. This project is designed to be easily extensible - the modular architecture makes it simple to add new backends or improve existing functionality.
+```bash
+# Check backend is running
+curl http://localhost:8000/health
+
+# Check CORS settings in backend/main.py
+# Verify NEXT_PUBLIC_API_URL in frontend/.env.local
+```
+
+</details>
+
+<details>
+<summary>Ollama timeout errors</summary>
+
+```bash
+# Check Ollama is running
+ollama list
+
+# Pull the model
+ollama pull llama3
+
+# Start Ollama server
+ollama serve
+```
+
+</details>
+
+---
+
+## 🎯 Roadmap
+
+- [ ] **Mobile App** - React Native version
+- [ ] **Collaborative Study** - Share decks and notes
+- [ ] **Audio Support** - Voice questions and answers
+- [ ] **Image Cards** - Flashcards with diagrams
+- [ ] **Advanced SRS** - Sophisticated spaced repetition
+- [ ] **Deck Marketplace** - Share community-created decks
+- [ ] **Study Analytics** - Detailed progress tracking
+- [ ] **Browser Extension** - Quick note-taking while browsing
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how to get started:
+
+1. **Fork the repository**
+2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Make your changes**
+4. **Run tests** (if applicable)
+5. **Commit** (`git commit -m 'Add amazing feature'`)
+6. **Push** (`git push origin feature/amazing-feature`)
+7. **Open a Pull Request**
+
+### Development Guidelines
+
+- Follow existing code style
+- Add tests for new features
+- Update documentation
+- Keep commits atomic and well-described
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **[FastAPI](https://fastapi.tiangolo.com/)** for the incredible backend framework
+- **[Next.js](https://nextjs.org/)** team for the amazing React framework
+- **[FAISS](https://github.com/facebookresearch/faiss)** by Meta AI for vector search
+- **[Sentence Transformers](https://www.sbert.net/)** for embedding models
+- **[Ollama](https://ollama.ai/)** for making local LLMs accessible
+- **[OpenRouter](https://openrouter.ai/)** for unified LLM API access
+
+---
+
+## 🔒 Security & Privacy
+
+- ✅ **Local-first** - All processing on your machine (with local models)
+- ✅ **No telemetry** - Zero data collection
+- ✅ **API keys secured** - `.env` files gitignored
+- ✅ **Full data ownership** - Your documents, your notes, your data
+- ⚠️ **Hosted models** - If using OpenRouter, data sent to their API
+
+**Recommendation**: Use Ollama for complete privacy.
+
+---
+
+## 📧 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/tutorV2/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/tutorV2/discussions)
+- **Email**: your.email@example.com
+
+---
+
+## ⭐ Star History
+
+If you find this project useful, please consider giving it a star! ⭐
+
+---
+
+<div align="center">
+
+**Built with ❤️ for students, by students**
+
+[Report Bug](https://github.com/yourusername/tutorV2/issues) · [Request Feature](https://github.com/yourusername/tutorV2/issues) · [Documentation](https://github.com/yourusername/tutorV2/wiki)
+
+</div>
