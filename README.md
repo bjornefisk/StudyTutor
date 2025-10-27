@@ -6,6 +6,18 @@ A local-first AI study companion that helps you learn from your own materials. U
 
 Most AI tutors are generic. This one learns from *your* materials. Upload your course PDFs, lecture notes, or textbooks, and get personalized answers based on your actual content. Perfect for students who want AI help that's actually relevant to their coursework.
 
+### ✨ Key Features
+
+- **💬 Intelligent Chat**: RAG-powered conversations that reference your actual study materials
+- **📚 AI Flashcard Generation**: Automatically extract key concepts and create study flashcards from your documents
+- **📝 Smart Note-Taking**: Live note-taking with AI-powered suggestions from your documents
+- **📥 Anki Export**: Export flashcard decks to Anki format (.apkg) for spaced repetition
+- **🎴 Built-in Review Mode**: Study flashcards with flip animations and track your progress
+- **🔗 Automatic Citations**: Notes automatically link to source documents with proper citations
+- **📂 Document Management**: Upload PDFs, DOCX, TXT, and Markdown files
+- **🎯 Multi-Query Retrieval**: Improved answer accuracy with parallel query variations
+- **🌓 Modern UI**: Beautiful dark/light theme with responsive design
+
 ## Quick Start
 
 1. **Install dependencies:**
@@ -143,6 +155,99 @@ NUM_QUERY_VARIATIONS=3         # Number of query variations to generate (default
 - Automatically falls back to single-query if LLM is unavailable
 
 **Example:** Asking "What is photosynthesis?" also searches for "Explain photosynthesis" and "photosynthesis definition and process" to ensure complete coverage.
+
+### Flashcard Generation
+
+The AI tutor uses **multi-pass deep analysis** to generate conceptual flashcards that test true understanding, not just memorization. Unlike RAG-based chat, flashcards send the **full document** to the LLM for comprehensive comprehension.
+
+**How It Works:**
+1. **Pass 1 - Concept Extraction**: AI reads the entire document and identifies key concepts, theories, and relationships
+2. **Pass 2 - Conceptual Questions**: AI generates questions that test understanding, application, and analysis of those concepts
+
+**Usage:**
+1. Navigate to the **Flashcards** tab in the web interface
+2. Click "Generate New Deck"
+3. Select the documents you want to create flashcards from
+4. Choose difficulty level (easy, medium, or hard)
+5. Set the number of cards to generate
+6. Click "Generate Flashcards"
+
+**Difficulty Levels:**
+- **Easy**: Basic understanding and recall of core concepts
+  - Question types: definitions, basic "what is" questions, simple examples
+  - Tests foundational understanding
+  
+- **Medium**: Application and analysis of concepts ⭐ Recommended
+  - Question types: how/why questions, applications, comparisons, cause-effect
+  - Tests analytical thinking and connections between ideas
+  
+- **Hard**: Synthesis, evaluation, and deep analysis
+  - Question types: synthesis across concepts, critical analysis, predictions, complex problem-solving
+  - Tests expert-level understanding with nuanced thinking
+
+**What Makes This Different:**
+- ❌ **NOT**: "What is photosynthesis?" (simple recall)
+- ✅ **YES**: "Why do plants perform photosynthesis in daylight but not at night?" (conceptual understanding)
+
+- ❌ **NOT**: "Define mitosis" (memorization)
+- ✅ **YES**: "How does mitosis ensure genetic consistency in daughter cells?" (application)
+
+**Features:**
+- **Deep Comprehension**: Analyzes full documents (no length limit), not just excerpts
+- **Conceptual Questions**: Tests understanding, not memorization
+- **Multi-Pass Analysis**: Identifies concepts first, then generates targeted questions
+- **Review Mode**: Built-in flashcard review with flip animations
+- **Progress Tracking**: Tracks review count and accuracy for each card
+- **Spaced Repetition**: Automatically schedules next review based on performance
+- **Anki Export**: Export decks to `.apkg` format for use in Anki
+- **Source Tracking**: Each card links back to the source document
+
+**Example Use Cases:**
+- Generate conceptual understanding questions from lecture slides
+- Create application-based flashcards from textbook chapters
+- Test synthesis and analysis of complex topics
+- Build exam prep decks that match professor question styles
+
+### Smart Note-Taking
+
+The AI tutor includes an intelligent note-taking system that bridges active learning with your RAG system. As you take notes, the AI suggests related content from your uploaded documents in real-time.
+
+**How It Works:**
+1. **Live Suggestions**: As you type, the system uses RAG to find relevant content from your documents
+2. **Auto-Linking**: Click suggestions to automatically link source documents to your notes
+3. **Citation Tracking**: All linked sources are tracked with page numbers and relevance scores
+4. **Export with Citations**: Export notes as markdown with properly formatted citations
+
+**Usage:**
+1. Navigate to the **Notes** tab in the web interface
+2. Click "New Note"
+3. Start typing your notes
+4. Watch the sidebar populate with related content from your documents
+5. Click suggestions to add them as sources
+6. Export notes with citations when done
+
+**Features:**
+- **Real-Time Suggestions**: Suggestions update as you type (1-second debounce)
+- **Relevance Scoring**: High/Medium/Low relevance indicators
+- **Source Preview**: See snippets from source documents
+- **Tag Organization**: Organize notes with custom tags
+- **Search & Filter**: Find notes by content or tags
+- **Markdown Support**: Full markdown formatting in note editor
+- **Bulk Export**: Export all notes as a single markdown document
+- **Smart Citations**: Automatic deduplication and formatting
+
+**Why This is Powerful:**
+- **Active Learning**: Combines writing (retention) with retrieval (RAG)
+- **Connected Knowledge**: See how concepts relate across documents
+- **Study Guide Creation**: Build comprehensive study guides with citations
+- **Research Notes**: Perfect for research papers with auto-citations
+
+**Example Workflow:**
+1. Upload lecture slides and textbook chapters
+2. Create notes while studying
+3. AI suggests related concepts from other materials
+4. Link sources to build comprehensive understanding
+5. Export notes with citations for exam review
 
 ### Text-to-Speech (Optional)
 

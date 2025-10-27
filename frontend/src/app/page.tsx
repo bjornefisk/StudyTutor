@@ -21,6 +21,8 @@ import Header from '@/components/Header'
 import ChatInterface from '@/components/ChatInterface'
 import FileUploadPanel from '@/components/FileUploadPanel'
 import SessionSidebar from '@/components/SessionSidebar'
+import FlashcardManager from '@/components/FlashcardManager'
+import NotesManager from '@/components/NotesManager'
 import {
   createSession,
   deleteSession,
@@ -32,7 +34,10 @@ import {
 } from '@/lib/api'
 import type { HealthResponse, Message, SessionDescriptor } from '@/types'
 
+type ViewMode = 'chat' | 'flashcards' | 'notes'
+
 export default function HomePage() {
+  const [viewMode, setViewMode] = useState<ViewMode>('chat')
   const [sessionId, setSessionId] = useState<string>(() => uuid().slice(0, 12))
   const [messages, setMessages] = useState<Message[]>([])
   const [sessions, setSessions] = useState<SessionDescriptor[]>([])
@@ -173,34 +178,73 @@ export default function HomePage() {
         )}
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          {/* Upload Button */}
+          {/* View Mode Tabs */}
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className={`h-2 w-2 rounded-full ${health?.status === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
-                <span>{healthStatus}</span>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                <button
+                  onClick={() => setViewMode('chat')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    viewMode === 'chat'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent'
+                  }`}
+                >
+                  💬 Chat
+                </button>
+                <button
+                  onClick={() => setViewMode('flashcards')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    viewMode === 'flashcards'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent'
+                  }`}
+                >
+                  📚 Flashcards
+                </button>
+                <button
+                  onClick={() => setViewMode('notes')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    viewMode === 'notes'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent'
+                  }`}
+                >
+                  📝 Notes
+                </button>
               </div>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useMultiQuery}
-                  onChange={(e) => setUseMultiQuery(e.target.checked)}
-                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <span className="text-muted-foreground font-medium">🔍 Multi-Query</span>
-              </label>
+              
+              {viewMode === 'chat' && (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className={`h-2 w-2 rounded-full ${health?.status === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+                    <span>{healthStatus}</span>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useMultiQuery}
+                      onChange={(e) => setUseMultiQuery(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <span className="text-muted-foreground font-medium">🔍 Multi-Query</span>
+                  </label>
+                </>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => setShowUploader((prev) => !prev)}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5"
-            >
-              {showUploader ? 'Hide Upload' : '📁 Upload Files'}
-            </button>
+            {viewMode === 'chat' && (
+              <button
+                type="button"
+                onClick={() => setShowUploader((prev) => !prev)}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5"
+              >
+                {showUploader ? 'Hide Upload' : '📁 Upload Files'}
+              </button>
+            )}
           </div>
 
           {/* Upload Panel */}
-          {showUploader && (
+          {showUploader && viewMode === 'chat' && (
             <div className="mb-6 animate-slide-up">
               <FileUploadPanel
                 onClose={() => setShowUploader(false)}
@@ -209,35 +253,48 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-            {/* Sidebar */}
-            <aside className="hidden lg:block">
-              <div className="sticky top-20">
-                <SessionSidebar
-                  sessions={sessions}
-                  isLoading={sessionsLoading}
-                  currentSessionId={sessionId}
-                  onCreate={() => void handleCreateSession()}
-                  onSelect={(id) => void handleSelectSession(id)}
-                  onDelete={(id) => void handleDeleteSession(id)}
-                  onRefresh={() => void loadSessions()}
-                />
-              </div>
-            </aside>
+          {/* Conditional Content Based on View Mode */}
+          {viewMode === 'chat' ? (
+            /* Main Content Grid */
+            <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+              {/* Sidebar */}
+              <aside className="hidden lg:block">
+                <div className="sticky top-20">
+                  <SessionSidebar
+                    sessions={sessions}
+                    isLoading={sessionsLoading}
+                    currentSessionId={sessionId}
+                    onCreate={() => void handleCreateSession()}
+                    onSelect={(id) => void handleSelectSession(id)}
+                    onDelete={(id) => void handleDeleteSession(id)}
+                    onRefresh={() => void loadSessions()}
+                  />
+                </div>
+              </aside>
 
-            {/* Chat Interface */}
-            <section className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
-              <ChatInterface
-                messages={messages}
-                isLoading={isSending}
-                onSend={handleSend}
-                suggestions={suggestions}
-                onSuggestionSelect={handleSuggestionSelect}
-                onSuggestionSearch={handleSuggestionSearch}
-              />
-            </section>
-          </div>
+              {/* Chat Interface */}
+              <section className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
+                <ChatInterface
+                  messages={messages}
+                  isLoading={isSending}
+                  onSend={handleSend}
+                  suggestions={suggestions}
+                  onSuggestionSelect={handleSuggestionSelect}
+                  onSuggestionSearch={handleSuggestionSearch}
+                />
+              </section>
+            </div>
+          ) : viewMode === 'flashcards' ? (
+            /* Flashcard Manager */
+            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
+              <FlashcardManager />
+            </div>
+          ) : (
+            /* Notes Manager */
+            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
+              <NotesManager />
+            </div>
+          )}
         </div>
       </main>
     </div>

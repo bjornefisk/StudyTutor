@@ -36,6 +36,25 @@ from tutor.core.storage import (
     load_chat,
 )
 from tutor.core.suggestions import build_suggestions
+from tutor.core.flashcards import (
+    generate_flashcards_from_text,
+    save_flashcard_deck,
+    load_flashcard_deck,
+    list_flashcard_decks,
+    update_flashcard_review,
+    delete_flashcard_deck,
+    export_to_anki,
+)
+from tutor.core.notes import (
+    create_note,
+    update_note,
+    get_note,
+    list_notes,
+    delete_note,
+    add_source_to_note,
+    export_note_with_citations,
+    export_all_notes,
+)
 
 ensure_app_dirs()
 
@@ -112,6 +131,76 @@ class SessionCreate(BaseModel):
 class SuggestionRequest(BaseModel):
     prefix: str = ""
     limit: int = Field(default=6, ge=1, le=25)
+
+
+class FlashcardGenerateRequest(BaseModel):
+    document_names: List[str] = Field(..., description="List of document names to generate flashcards from")
+    num_cards: int = Field(default=10, ge=1, le=50, description="Number of flashcards to generate")
+    difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
+    deck_name: str = Field(..., min_length=1, description="Name for the flashcard deck")
+
+
+class FlashcardDeck(BaseModel):
+    id: str
+    name: str
+    card_count: int
+    created_at: str
+    updated_at: str
+
+
+class Flashcard(BaseModel):
+    id: str
+    front: str
+    back: str
+    tags: List[str]
+    source_document: str
+    created_at: str
+    difficulty: str
+    review_count: int
+    correct_count: int
+    last_reviewed: Optional[str]
+    next_review: Optional[str]
+
+
+class FlashcardDeckDetail(BaseModel):
+    id: str
+    name: str
+    created_at: str
+    updated_at: str
+    card_count: int
+    flashcards: List[Flashcard]
+
+
+class FlashcardReviewRequest(BaseModel):
+    card_id: str
+    correct: bool
+
+
+class NoteCreate(BaseModel):
+    title: str = Field(..., min_length=1, description="Note title")
+    content: str = Field(default="", description="Note content (markdown supported)")
+    tags: List[str] = Field(default_factory=list, description="Tags for organization")
+    linked_sources: List[dict] = Field(default_factory=list, description="Linked source citations")
+
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    tags: Optional[List[str]] = None
+    linked_sources: Optional[List[dict]] = None
+
+
+class NoteSuggestionRequest(BaseModel):
+    content: str = Field(..., description="Current note content to get suggestions for")
+    top_k: int = Field(default=3, ge=1, le=10, description="Number of suggestions to return")
+
+
+class AddSourceRequest(BaseModel):
+    source: str
+    page: int
+    chunk_index: int
+    text: str
+    score: float
 
 
 def _assert_index_ready() -> None:
@@ -308,6 +397,305 @@ async def suggestions(request: SuggestionRequest) -> dict:
     except Exception as exc:  # Suggestion generation is optional - don't fail the request
         logging.debug("Suggestion generation failed: %s", exc)
         return {"suggestions": []}
+
+
+# ============================================================================
+# Flashcard Endpoints
+# ============================================================================
+
+@app.post("/flashcards/generate")
+async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
+    """Generate flashcards from specified documents using AI."""
+    _assert_index_ready()
+    
+    # Collect text from specified documents
+    document_texts = {}
+    for meta in _METAS:
+        source_name = meta.get("source", "")
+        if source_name in request.document_names:
+            if source_name not in document_texts:
+                document_texts[source_name] = []
+            document_texts[source_name].append(meta.get("text", ""))
+    
+    if not document_texts:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No matching documents found for: {request.document_names}"
+        )
+    
+    # Check if documents have sufficient content
+    total_text_length = sum(len("\n\n".join(chunks)) for chunks in document_texts.values())
+    if total_text_length < 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Selected documents don't have enough content to generate flashcards. Please select documents with more text."
+        )
+    
+    # Generate flashcards from combined document text (NO LENGTH LIMIT - send full documents)
+    all_flashcards = []
+    errors = []
+    
+    for doc_name, text_chunks in document_texts.items():
+        # Combine ALL chunks - no truncation for deep understanding
+        combined_text = "\n\n".join(text_chunks)
+        
+        logging.info(f"Generating conceptual flashcards from {doc_name} ({len(combined_text)} characters, {len(text_chunks)} chunks)")
+        
+        try:
+            cards = generate_flashcards_from_text(
+                combined_text,  # Full document text for true comprehension
+                doc_name,
+                num_cards=max(1, request.num_cards // len(document_texts)),  # Distribute evenly, min 1
+                difficulty=request.difficulty
+            )
+            all_flashcards.extend(cards)
+            logging.info(f"Successfully generated {len(cards)} conceptual flashcards from {doc_name}")
+        except ValueError as e:
+            errors.append(f"{doc_name}: {str(e)}")
+            logging.error(f"Failed to generate flashcards from {doc_name}: {e}")
+        except Exception as e:
+            errors.append(f"{doc_name}: Unexpected error - {str(e)}")
+            logging.exception(f"Unexpected error generating flashcards from {doc_name}")
+    
+    # If no flashcards were generated at all, raise an error
+    if not all_flashcards:
+        error_detail = "Failed to generate any flashcards. " + (
+            "Errors: " + "; ".join(errors) if errors else 
+            "Check if your LLM backend (Ollama/OpenRouter) is running and configured correctly."
+        )
+        raise HTTPException(status_code=500, detail=error_detail)
+    
+    # Save the deck
+    deck_id = save_flashcard_deck(
+        deck_name=request.deck_name,
+        flashcards=all_flashcards
+    )
+    
+    response = {
+        "deck_id": deck_id,
+        "deck_name": request.deck_name,
+        "cards_generated": len(all_flashcards),
+        "status": "success"
+    }
+    
+    # Include warnings if some documents failed
+    if errors:
+        response["warnings"] = errors
+    
+    return response
+
+
+@app.get("/flashcards/decks")
+async def get_flashcard_decks() -> dict:
+    """List all flashcard decks."""
+    decks = list_flashcard_decks()
+    return {"decks": decks, "count": len(decks)}
+
+
+@app.get("/flashcards/decks/{deck_id}")
+async def get_flashcard_deck(deck_id: str) -> FlashcardDeckDetail:
+    """Get a specific flashcard deck with all cards."""
+    deck = load_flashcard_deck(deck_id)
+    if not deck:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    return FlashcardDeckDetail(**deck)
+
+
+@app.delete("/flashcards/decks/{deck_id}")
+async def delete_deck(deck_id: str) -> dict:
+    """Delete a flashcard deck."""
+    success = delete_flashcard_deck(deck_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    return {"status": "deleted", "deck_id": deck_id}
+
+
+@app.post("/flashcards/decks/{deck_id}/review")
+async def review_flashcard(deck_id: str, request: FlashcardReviewRequest) -> dict:
+    """Record a flashcard review (correct/incorrect)."""
+    success = update_flashcard_review(deck_id, request.card_id, request.correct)
+    if not success:
+        raise HTTPException(status_code=404, detail="Deck or card not found")
+    return {"status": "recorded", "card_id": request.card_id, "correct": request.correct}
+
+
+@app.get("/flashcards/decks/{deck_id}/export")
+async def export_deck_to_anki(deck_id: str):
+    """Export a flashcard deck to Anki .apkg format."""
+    from fastapi.responses import Response
+    
+    apkg_data = export_to_anki(deck_id)
+    if not apkg_data:
+        raise HTTPException(status_code=404, detail="Deck not found or export failed")
+    
+    deck = load_flashcard_deck(deck_id)
+    filename = f"{deck['name'].replace(' ', '_')}.apkg"
+    
+    return Response(
+        content=apkg_data,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+
+# ============================================================================
+# Note-Taking Endpoints
+# ============================================================================
+
+@app.post("/notes")
+async def create_note_endpoint(request: NoteCreate) -> dict:
+    """Create a new note."""
+    note = create_note(
+        title=request.title,
+        content=request.content,
+        tags=request.tags,
+        linked_sources=request.linked_sources
+    )
+    return note
+
+
+@app.get("/notes")
+async def list_notes_endpoint(
+    tags: Optional[str] = None,
+    search: Optional[str] = None
+) -> dict:
+    """List all notes with optional filtering."""
+    tag_list = tags.split(",") if tags else None
+    notes = list_notes(tags=tag_list, search=search)
+    return {"notes": notes, "count": len(notes)}
+
+
+@app.get("/notes/{note_id}")
+async def get_note_endpoint(note_id: str) -> dict:
+    """Get a specific note."""
+    note = get_note(note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return note
+
+
+@app.put("/notes/{note_id}")
+async def update_note_endpoint(note_id: str, request: NoteUpdate) -> dict:
+    """Update a note."""
+    note = update_note(
+        note_id=note_id,
+        title=request.title,
+        content=request.content,
+        tags=request.tags,
+        linked_sources=request.linked_sources
+    )
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return note
+
+
+@app.delete("/notes/{note_id}")
+async def delete_note_endpoint(note_id: str) -> dict:
+    """Delete a note."""
+    success = delete_note(note_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return {"status": "deleted", "note_id": note_id}
+
+
+@app.post("/notes/{note_id}/sources")
+async def add_source_to_note_endpoint(note_id: str, request: AddSourceRequest) -> dict:
+    """Add a source citation to a note."""
+    note = add_source_to_note(
+        note_id=note_id,
+        source=request.source,
+        page=request.page,
+        chunk_index=request.chunk_index,
+        text=request.text,
+        score=request.score
+    )
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return note
+
+
+@app.post("/notes/suggestions")
+async def get_note_suggestions(request: NoteSuggestionRequest) -> dict:
+    """Get RAG-based suggestions for note content.
+    
+    This uses the existing retrieval system to find related content
+    from uploaded documents based on what the user is currently writing.
+    """
+    _assert_index_ready()
+    
+    if not request.content or len(request.content.strip()) < 10:
+        return {"suggestions": []}
+    
+    # Use the last 500 characters for context
+    query_text = request.content[-500:].strip()
+    
+    try:
+        # Use existing RAG retrieval
+        hits = retrieve(
+            query_text,
+            _INDEX,
+            _METAS,
+            _EMBED_FN,
+            k=request.top_k,
+            use_multi_query=False  # Fast retrieval for live suggestions
+        )
+        
+        suggestions = []
+        for score, meta in hits:
+            suggestions.append({
+                "source": meta["source"],
+                "page": int(meta.get("page", 0)),
+                "chunk_index": int(meta.get("chunk_index", -1)),
+                "text": meta.get("text", "")[:300],  # First 300 chars
+                "score": float(score),
+                "relevance": "high" if score > 0.8 else "medium" if score > 0.6 else "low"
+            })
+        
+        return {"suggestions": suggestions, "count": len(suggestions)}
+    except Exception as e:
+        logging.error(f"Failed to generate suggestions: {e}")
+        return {"suggestions": [], "error": str(e)}
+
+
+@app.get("/notes/{note_id}/export")
+async def export_note_endpoint(note_id: str):
+    """Export a note as markdown with citations."""
+    from fastapi.responses import Response
+    
+    markdown = export_note_with_citations(note_id)
+    if not markdown:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    note = get_note(note_id)
+    filename = f"{note['title'].replace(' ', '_')}.md"
+    
+    return Response(
+        content=markdown,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+
+@app.get("/notes/export/all")
+async def export_all_notes_endpoint():
+    """Export all notes as a single markdown document."""
+    from fastapi.responses import Response
+    
+    markdown = export_all_notes()
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"all_notes_{timestamp}.md"
+    
+    return Response(
+        content=markdown,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

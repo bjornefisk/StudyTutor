@@ -15,7 +15,7 @@ from .config import (
 logger = logging.getLogger(__name__)
 
 
-def _call_ollama(prompt: str) -> str:
+def _call_ollama(prompt: str, max_tokens: int = 220) -> str:
     """Call local Ollama chat API."""
     import requests
 
@@ -28,7 +28,7 @@ def _call_ollama(prompt: str) -> str:
                     {"role": "system", "content": "You are a helpful tutor."},
                     {"role": "user", "content": prompt},
                 ],
-                "options": {"temperature": 0.2, "num_predict": 220},
+                "options": {"temperature": 0.2, "num_predict": max_tokens},
                 "stream": False,
             },
             timeout=120,
@@ -41,14 +41,14 @@ def _call_ollama(prompt: str) -> str:
         return f"Error calling Ollama: {exc}"
 
 
-def llm_answer(prompt: str) -> str:
+def llm_answer(prompt: str, max_tokens: int = 220) -> str:
     if LLM_BACKEND == "ollama":
-        return _call_ollama(prompt)
+        return _call_ollama(prompt, max_tokens)
 
     if LLM_BACKEND == "openrouter":
         if not OPENROUTER_API_KEY:
             logger.warning("OPENROUTER_API_KEY not set; falling back to Ollama")
-            return _call_ollama(prompt)
+            return _call_ollama(prompt, max_tokens)
 
         from openai import OpenAI
 
@@ -61,7 +61,7 @@ def llm_answer(prompt: str) -> str:
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.2,
-                max_tokens=220,
+                max_tokens=max_tokens,
                 extra_headers={
                     "HTTP-Referer": OPENROUTER_SITE_URL or "",
                     "X-Title": OPENROUTER_APP_NAME,
@@ -74,6 +74,6 @@ def llm_answer(prompt: str) -> str:
         except Exception as exc:
             logger.error("OpenRouter request failed: %s; falling back to Ollama", exc)
 
-        return _call_ollama(prompt)
+        return _call_ollama(prompt, max_tokens)
 
     raise ValueError(f"Unknown LLM_BACKEND: {LLM_BACKEND}")
