@@ -1,4 +1,17 @@
-"use client"
+/**
+ * ChatInterface Component
+ * 
+ * The main chat interface for the AI Tutor application. Features include:
+ * - Real-time message display with markdown rendering
+ * - Source citations with relevance scores
+ * - AI-powered question suggestions
+ * - Responsive design with smooth animations
+ * - Keyboard shortcuts (Enter to send, Shift+Enter for new line)
+ * - Auto-scrolling and auto-resizing textarea
+ * 
+ * Uses ReactMarkdown for rendering assistant responses and includes
+ * proper accessibility features for screen readers.
+ */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import ReactMarkdown from 'react-markdown'

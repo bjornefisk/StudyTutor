@@ -1,4 +1,15 @@
-"""FastAPI backend exposing the tutor RAG capabilities."""
+"""FastAPI backend exposing the tutor RAG capabilities.
+
+This module provides a REST API for the AI Tutor application, handling:
+- Chat interactions with document-based Q&A
+- File uploads and document ingestion
+- Session management and history
+- Health monitoring and status checks
+- AI-powered question suggestions
+
+The API uses FastAPI with async/await patterns and includes proper error handling,
+CORS configuration, and background task processing for document ingestion.
+"""
 from __future__ import annotations
 
 import logging
@@ -13,7 +24,7 @@ from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from tutor.core.config import DATA_DIR, TOP_K
+from tutor.core.config import DATA_DIR, TOP_K, USE_MULTI_QUERY, NUM_QUERY_VARIATIONS
 from tutor.core.embeddings import get_embedder
 from tutor.core.indexing import load_index_and_meta
 from tutor.core.llm import llm_answer
@@ -70,6 +81,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, description="User prompt")
     session_id: Optional[str] = Field(default=None, description="Existing session identifier")
     top_k: Optional[int] = Field(default=None, ge=1, le=20, description="Override number of retrieved chunks")
+    use_multi_query: Optional[bool] = Field(default=None, description="Enable multi-query retrieval for better results")
 
 
 class Source(BaseModel):
@@ -143,8 +155,17 @@ async def chat(request: ChatRequest) -> ChatResponse:
     append_chat_message(session_id, "user", prompt)
 
     k = request.top_k or TOP_K
+    use_mq = request.use_multi_query if request.use_multi_query is not None else USE_MULTI_QUERY
 
-    hits = retrieve(prompt, _INDEX, _METAS, _EMBED_FN, k=k)
+    hits = retrieve(
+        prompt, 
+        _INDEX, 
+        _METAS, 
+        _EMBED_FN, 
+        k=k, 
+        use_multi_query=use_mq,
+        num_query_variations=NUM_QUERY_VARIATIONS
+    )
     context_chunks = [meta for _, meta in hits]
     prompt_payload = build_prompt(context_chunks, prompt)
     answer = llm_answer(prompt_payload)
@@ -188,7 +209,7 @@ async def upload(files: List[UploadFile] = File(...)) -> dict:
             content = await file.read()
             target.write_bytes(content)
             saved.append(target.name)
-        except Exception as exc:  # pragma: no cover - file system failures
+        except (OSError, IOError, PermissionError) as exc:
             logging.exception("Failed saving uploaded file %s", file.filename)
             errors.append(f"{file.filename}: {exc}")
 
@@ -202,7 +223,7 @@ async def ingest_endpoint(background_tasks: BackgroundTasks) -> dict:
     def _ingest_job() -> None:
         try:
             run_ingest()
-        except Exception as exc:  # pragma: no cover - background task
+        except Exception as exc:  # Background task - log but don't crash
             logging.exception("Ingestion failed: %s", exc)
             return
         refresh_resources(force_reload=True)
@@ -284,7 +305,7 @@ async def suggestions(request: SuggestionRequest) -> dict:
     try:
         suggestions = build_suggestions(_METAS, prefix=request.prefix, limit=request.limit)
         return {"suggestions": suggestions}
-    except Exception as exc:  # pragma: no cover - heuristic helper
+    except Exception as exc:  # Suggestion generation is optional - don't fail the request
         logging.debug("Suggestion generation failed: %s", exc)
         return {"suggestions": []}
 

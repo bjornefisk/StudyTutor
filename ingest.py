@@ -1,13 +1,28 @@
-import os, json, uuid
+"""
+Document Ingestion Pipeline
+
+This module handles the ingestion and indexing of study materials for the AI Tutor.
+It processes PDFs, DOCX, TXT, and Markdown files, extracts text, chunks it into
+manageable pieces, generates embeddings, and builds a FAISS vector index for
+semantic search.
+
+The ingestion process also supports PubChem compound lookups for chemistry-related
+materials by reading compound names or CIDs from pubchem.txt files.
+"""
+
+import json
 import logging
+import os
+import uuid
 from datetime import datetime
-import numpy as np
+from typing import Dict, List, Optional, Tuple
+
 import faiss
-from pypdf import PdfReader
+import numpy as np
+import tiktoken
 from docx import Document
 from dotenv import load_dotenv
-import tiktoken
-from typing import List, Dict, Tuple, Optional
+from pypdf import PdfReader
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,7 +53,8 @@ OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 CHUNK_TOKENS = int(os.getenv("CHUNK_TOKENS", "800"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "80"))
 
-def ensure_dirs():
+def ensure_dirs() -> None:
+    """Create necessary directories if they don't exist."""
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(STORE_DIR, exist_ok=True)
     os.makedirs(PUBCHEM_CACHE_DIR, exist_ok=True)
@@ -51,14 +67,14 @@ def read_pdf(path: str) -> List[Tuple[int, str]]:
         for i, p in enumerate(reader.pages):
             try:
                 text = p.extract_text() or ""
-            except Exception as exc:
+            except (AttributeError, KeyError) as exc:
                 logger.warning("Failed to extract text from page %d of %s: %s", i + 1, path, exc)
                 text = ""
             text = text.strip()
             if text:
                 pages.append((i + 1, text))
         return pages
-    except Exception as exc:
+    except (FileNotFoundError, PermissionError, OSError) as exc:
         logger.error("Failed to read PDF %s: %s", path, exc)
         return []
 
@@ -68,7 +84,7 @@ def read_text_file(path: str) -> List[Tuple[int, str]]:
         with open(path, "r", encoding="utf-8") as f:
             text = f.read().strip()
         return [(1, text)] if text else []
-    except Exception as exc:
+    except (FileNotFoundError, PermissionError, UnicodeDecodeError) as exc:
         logger.error("Failed to read text file %s: %s", path, exc)
         return []
 
@@ -79,19 +95,32 @@ def read_docx(path: str) -> List[Tuple[int, str]]:
         paras = [p.text.strip() for p in doc.paragraphs if p.text and p.text.strip()]
         text = "\n\n".join(paras).strip()
         return [(1, text)] if text else []
-    except Exception as exc:
+    except (FileNotFoundError, PermissionError, OSError) as exc:
         logger.error("Failed to read DOCX %s: %s", path, exc)
         return []
 
-def tokenize(text: str):
+def tokenize(text: str) -> List[int]:
+    """Convert text to tokens using tiktoken encoding."""
     enc = tiktoken.get_encoding("cl100k_base")
     return enc.encode(text)
 
-def detokenize(tokens: List[int]):
+def detokenize(tokens: List[int]) -> str:
+    """Convert tokens back to text using tiktoken encoding."""
     enc = tiktoken.get_encoding("cl100k_base")
     return enc.decode(tokens)
 
-def chunk_text(text: str, max_tokens=350, overlap=60) -> List[str]:
+def chunk_text(text: str, max_tokens: int = 350, overlap: int = 60) -> List[str]:
+    """
+    Split text into overlapping chunks based on token count.
+    
+    Args:
+        text: The text to chunk
+        max_tokens: Maximum tokens per chunk
+        overlap: Number of tokens to overlap between chunks
+        
+    Returns:
+        List of text chunks
+    """
     toks = tokenize(text)
     chunks = []
     start = 0
@@ -125,13 +154,13 @@ def _resolve_pubchem_cid(query: str) -> Optional[Tuple[int, str]]:
         try:
             cid = int(m.group(1))
             return cid, f"CID {cid}"
-        except Exception:
+        except (ValueError, OverflowError):
             pass
     # If it's an integer string already
     try:
         cid = int(raw)
         return cid, f"CID {cid}"
-    except Exception:
+    except (ValueError, OverflowError):
         pass
 
     import requests
@@ -143,7 +172,7 @@ def _resolve_pubchem_cid(query: str) -> Optional[Tuple[int, str]]:
             first_line = r.text.strip().splitlines()[0].strip()
             cid = int(first_line)
             return cid, query
-    except Exception:
+    except (requests.RequestException, ValueError, KeyError, json.JSONDecodeError):
         return None
     return None
 
@@ -182,7 +211,7 @@ def _extract_text_from_pug_view(record: Dict) -> str:
         rec = record.get("Record", {})
         secs = rec.get("Section") or []
         walk_sections(secs, 0)
-    except Exception:
+    except (KeyError, TypeError, AttributeError):
         pass
     return "\n\n".join([ln for ln in lines if ln and isinstance(ln, str)])
 
@@ -195,7 +224,7 @@ def _fetch_pubchem_text(cid: int) -> Optional[str]:
                 cached = f.read().strip()
                 if cached:
                     return cached
-    except Exception:
+    except (KeyError, TypeError, AttributeError):
         pass
 
     import requests
@@ -210,10 +239,10 @@ def _fetch_pubchem_text(cid: int) -> Optional[str]:
             try:
                 with open(cache_path, "w", encoding="utf-8") as f:
                     f.write(text)
-            except Exception:
+            except (OSError, IOError):
                 pass
         return text or None
-    except Exception:
+    except (requests.RequestException, ValueError, KeyError, json.JSONDecodeError):
         return None
 
 def get_embedder():
@@ -284,7 +313,19 @@ def count_metadata() -> int:
     with open(META_PATH, "r", encoding="utf-8") as f:
         return sum(1 for _ in f)
 
-def ingest():
+def ingest() -> None:
+    """
+    Main ingestion function that processes all documents and builds the search index.
+    
+    This function:
+    1. Discovers all supported files in the data/ directory
+    2. Extracts text from PDFs, DOCX, TXT, and MD files
+    3. Processes PubChem compound queries from pubchem.txt files
+    4. Chunks all text into manageable pieces
+    5. Generates embeddings for all chunks
+    6. Builds a FAISS vector index for semantic search
+    7. Saves metadata and configuration
+    """
     ensure_dirs()
     embed = get_embedder()
 
@@ -318,7 +359,7 @@ def ingest():
         # Use path relative to data/ for clearer source labels
         try:
             title = os.path.relpath(fp, DATA_DIR)
-        except Exception:
+        except (OSError, ValueError):
             title = os.path.basename(fp)
         for page_num, text in pages:
             chunks = chunk_text(text, CHUNK_TOKENS, CHUNK_OVERLAP)
@@ -406,7 +447,7 @@ def ingest():
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
         logger.info("Wrote index fingerprint to %s", CONFIG_PATH)
-    except Exception as exc:
+    except (OSError, IOError, json.JSONEncodeError) as exc:
         logger.warning("Failed to write index config: %s", exc)
     
     logger.info("Ingested %d chunks from %d documents and %d PubChem entries", len(all_chunks), len(files), pubchem_ingested)

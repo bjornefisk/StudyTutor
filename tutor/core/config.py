@@ -33,3 +33,7 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 
 TOP_K = int(os.getenv("TOP_K", "3"))
+
+# Multi-query retrieval settings
+USE_MULTI_QUERY = os.getenv("USE_MULTI_QUERY", "true").lower() in ("true", "1", "yes")
+NUM_QUERY_VARIATIONS = int(os.getenv("NUM_QUERY_VARIATIONS", "3"))

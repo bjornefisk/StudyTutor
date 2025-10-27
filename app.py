@@ -1,9 +1,21 @@
-import os, json
+"""
+AI Tutor - Streamlit Web Interface
+
+A local-first AI study companion that helps students learn from their own materials.
+Upload PDFs, textbooks, or notes and chat with an AI tutor that knows your content.
+
+This module provides the main Streamlit web interface for the AI Tutor application.
+"""
+
+import json
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-import numpy as np
+from typing import List
+
 import faiss
+import numpy as np
 import streamlit as st
 from dotenv import load_dotenv
 from tutor.ui.theme import inject_css
@@ -12,7 +24,7 @@ from tutor.core.config import (
     STORE_DIR, META_PATH, INDEX_PATH, CHATS_DIR, DATA_DIR, CONFIG_PATH,
     TTS_BACKEND, EMBED_BACKEND, LLM_BACKEND,
     OPENROUTER_BASE_URL, OPENROUTER_API_KEY, OPENROUTER_CHAT_MODEL, OPENROUTER_EMBED_MODEL, OPENROUTER_SITE_URL, OPENROUTER_APP_NAME,
-    SBERT_MODEL, OLLAMA_MODEL, OLLAMA_EMBED_MODEL, TOP_K,
+    SBERT_MODEL, OLLAMA_MODEL, OLLAMA_EMBED_MODEL, TOP_K, USE_MULTI_QUERY, NUM_QUERY_VARIATIONS,
 )
 from tutor.core.storage import ensure_app_dirs, list_chat_sessions, load_chat, append_chat_message, get_session_summary, save_session_summary, generate_session_summary
 from tutor.core.indexing import load_index_and_meta
@@ -25,8 +37,21 @@ load_dotenv()
 
  
 
-def _build_suggestions(metas, prefix: str = "", limit: int = 10):
-    # Backwards shim to keep call sites unchanged
+def _build_suggestions(metas: List[dict], prefix: str = "", limit: int = 10) -> List[str]:
+    """
+    Build question suggestions based on document metadata.
+    
+    This is a backwards compatibility wrapper for the build_suggestions function
+    from the core module to keep existing call sites unchanged.
+    
+    Args:
+        metas: List of document metadata dictionaries
+        prefix: Optional prefix to filter suggestions
+        limit: Maximum number of suggestions to return
+        
+    Returns:
+        List of suggested questions
+    """
     return build_suggestions(metas, prefix=prefix, limit=limit)
 
 st.set_page_config(page_title="AI Tutor", page_icon="🎓", layout="centered", initial_sidebar_state="collapsed")
@@ -47,6 +72,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"**Embedding**: {EMBED_BACKEND}")
     st.markdown(f"**LLM**: {LLM_BACKEND}")
+    st.markdown(f"**Multi-Query**: {'✅ Enabled' if USE_MULTI_QUERY else '❌ Disabled'}")
     if TTS_BACKEND != "off":
         st.session_state.setdefault("speak_answer", False)
         st.session_state["speak_answer"] = st.checkbox("🔊 Text-to-Speech", value=st.session_state["speak_answer"])
@@ -75,8 +101,9 @@ with st.expander("📁 Upload Study Materials", expanded=False):
                 with dest.open("wb") as f:
                     f.write(uf.getbuffer())
                 saved += 1
-            except Exception:
-                pass
+            except (OSError, IOError) as e:
+                st.error(f"Failed to save file {uf.name}: {e}")
+                continue
         if saved:
             st.success(f"✓ Saved {saved} file(s) to data/")
     col1, col2 = st.columns([1,3])
@@ -90,7 +117,8 @@ with st.expander("📁 Upload Study Materials", expanded=False):
         for p in Path(DATA_DIR).rglob("*"):
             if p.is_file() and p.suffix.lower() in {".pdf",".docx",".txt",".md"}:
                 existing.append(str(p.relative_to(DATA_DIR)))
-    except Exception:
+    except (OSError, PermissionError) as e:
+        st.warning(f"Could not scan data directory: {e}")
         existing = []
     if existing:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
@@ -107,11 +135,12 @@ with st.expander("📁 Upload Study Materials", expanded=False):
                 st.success("✅ Ingestion complete! Ready for Q&A.")
                 st.cache_resource.clear()  # <-- force reload cached resources
                 st.rerun()
-            except Exception as exc:
+            except subprocess.CalledProcessError as exc:
                 st.error(f"❌ Ingestion failed: {exc}")
                 st.rerun()
             except Exception as e:
-                st.error(f"Ingestion failed: {e}")
+                st.error(f"❌ Unexpected error during ingestion: {e}")
+                st.rerun()
 
 # Load index and embedder after possible ingestion
 index, metas = load_index_and_meta()
@@ -185,7 +214,8 @@ with st.expander("💡 Question Suggestions", expanded=False):
     suggestions_prefix = st.text_input("Filter suggestions (optional)", value="", placeholder="What is...")
     try:
         suggs = _build_suggestions(metas, prefix=suggestions_prefix, limit=6)
-    except Exception:
+    except Exception as e:
+        st.warning(f"Could not generate suggestions: {e}")
         suggs = []
     if suggs:
         cols = st.columns(2)
@@ -230,7 +260,15 @@ if prompt_text is not None and prompt_text.strip():
             tip = st.empty()
             tip.markdown("_✨ Thinking..._")
             try:
-                hits = retrieve(prompt_text, index, metas, embed_fn, k=TOP_K)
+                hits = retrieve(
+                    prompt_text, 
+                    index, 
+                    metas, 
+                    embed_fn, 
+                    k=TOP_K, 
+                    use_multi_query=USE_MULTI_QUERY,
+                    num_query_variations=NUM_QUERY_VARIATIONS
+                )
                 context = [m for _, m in hits]
                 prompt = build_prompt(context, prompt_text)
                 ans = llm_answer(prompt)

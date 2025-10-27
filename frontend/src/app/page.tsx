@@ -1,5 +1,19 @@
 "use client"
 
+/**
+ * Main HomePage Component
+ * 
+ * The primary page component for the AI Tutor application. Manages:
+ * - Session state and message history
+ * - File upload and document ingestion
+ * - Health monitoring and status display
+ * - Suggestion generation and management
+ * - Responsive layout with sidebar and main chat area
+ * 
+ * Uses React hooks for state management and includes proper error
+ * handling for API failures and network issues.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 
@@ -28,6 +42,7 @@ export default function HomePage() {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [banner, setBanner] = useState<string>('')
+  const [useMultiQuery, setUseMultiQuery] = useState<boolean>(true)
 
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true)
@@ -73,7 +88,7 @@ export default function HomePage() {
   setMessages((prev: Message[]) => [...prev, userMessage])
       setIsSending(true)
       try {
-        const response = await postChat(prompt, sessionId)
+        const response = await postChat(prompt, sessionId, undefined, useMultiQuery)
         setSessionId(response.session_id)
         const assistantMessage: Message = {
           role: 'assistant',
@@ -94,7 +109,7 @@ export default function HomePage() {
         setIsSending(false)
       }
     },
-    [loadSessions, sessionId]
+      [loadSessions, sessionId, useMultiQuery]
   )
 
   const handleSuggestionSearch = useCallback(async (prefix: string) => {
@@ -160,9 +175,20 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           {/* Upload Button */}
           <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className={`h-2 w-2 rounded-full ${health?.status === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
-              <span>{healthStatus}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className={`h-2 w-2 rounded-full ${health?.status === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+                <span>{healthStatus}</span>
+              </div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useMultiQuery}
+                  onChange={(e) => setUseMultiQuery(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <span className="text-muted-foreground font-medium">🔍 Multi-Query</span>
+              </label>
             </div>
             <button
               type="button"

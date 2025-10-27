@@ -1,7 +1,7 @@
 """Retrieval and prompting utilities."""
 from __future__ import annotations
 import logging
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -13,12 +13,67 @@ def retrieve(
     metas: List[Dict],
     embed_fn: Callable[[List[str]], np.ndarray],
     k: int = 3,
+    use_multi_query: bool = False,
+    num_query_variations: int = 3,
 ) -> list[tuple[float, Dict]]:
-    """Retrieve top-k most relevant chunks using FAISS similarity search."""
+    """
+    Retrieve top-k most relevant chunks using FAISS similarity search.
+    
+    Args:
+        query: The user's search query
+        index: FAISS index
+        metas: Document metadata list
+        embed_fn: Embedding function
+        k: Number of results to return
+        use_multi_query: Whether to use multi-query retrieval
+        num_query_variations: Number of query variations to generate
+        
+    Returns:
+        List of (score, metadata) tuples
+    """
     if not query.strip():
         logger.warning("Empty query provided to retrieve()")
         return []
     
+    # Multi-query retrieval
+    if use_multi_query:
+        try:
+            from .multi_query import generate_multi_queries, deduplicate_results
+            
+            # Generate query variations
+            queries = generate_multi_queries(query, num_queries=num_query_variations, use_llm=True)
+            logger.info("Generated %d query variations for multi-query retrieval", len(queries))
+            
+            # Retrieve results for each query variation
+            all_results: List[tuple[float, Dict]] = []
+            for q in queries:
+                try:
+                    qv = embed_fn([q])
+                    sims, ids = index.search(np.asarray(qv, dtype="float32"), k)
+                    
+                    for score, idx in zip(sims[0], ids[0]):
+                        if idx == -1:
+                            continue
+                        if 0 <= idx < len(metas):
+                            all_results.append((float(score), metas[idx]))
+                except Exception as exc:
+                    logger.warning("Query variation '%s' failed: %s", q[:50], exc)
+                    continue
+            
+            # Deduplicate and re-rank
+            if all_results:
+                results = deduplicate_results(all_results, top_k=k)
+                logger.info("Multi-query retrieval: %d total results -> %d after deduplication", 
+                           len(all_results), len(results))
+                return results
+            else:
+                logger.warning("Multi-query retrieval returned no results, falling back to single query")
+                # Fall through to single query
+        except Exception as exc:
+            logger.error("Multi-query retrieval failed: %s, falling back to single query", exc)
+            # Fall through to single query
+    
+    # Standard single-query retrieval
     try:
         qv = embed_fn([query])
         sims, ids = index.search(np.asarray(qv, dtype="float32"), k)
