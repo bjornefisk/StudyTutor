@@ -513,8 +513,4 @@ If you find this project useful, please consider giving it a star! ⭐
 
 <div align="center">
 
-**Built with ❤️ for students, by students**
-
-[Report Bug](https://github.com/bjornefisk/tutorV2/issues) · [Request Feature](https://github.com/bjornefisk/tutorV2/issues) · [Documentation](https://github.com/bjornefisk/tutorV2/wiki)
-
 </div>
