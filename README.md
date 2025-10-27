@@ -434,19 +434,6 @@ ollama serve
 
 ---
 
-## 🎯 Roadmap
-
-- [ ] **Mobile App** - React Native version
-- [ ] **Collaborative Study** - Share decks and notes
-- [ ] **Audio Support** - Voice questions and answers
-- [ ] **Image Cards** - Flashcards with diagrams
-- [ ] **Advanced SRS** - Sophisticated spaced repetition
-- [ ] **Deck Marketplace** - Share community-created decks
-- [ ] **Study Analytics** - Detailed progress tracking
-- [ ] **Browser Extension** - Quick note-taking while browsing
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Here's how to get started:
