@@ -497,14 +497,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-## 📧 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/tutorV2/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/tutorV2/discussions)
-- **Email**: your.email@example.com
-
----
-
 ## ⭐ Star History
 
 If you find this project useful, please consider giving it a star! ⭐
