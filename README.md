@@ -515,6 +515,6 @@ If you find this project useful, please consider giving it a star! ⭐
 
 **Built with ❤️ for students, by students**
 
-[Report Bug](https://github.com/yourusername/tutorV2/issues) · [Request Feature](https://github.com/yourusername/tutorV2/issues) · [Documentation](https://github.com/yourusername/tutorV2/wiki)
+[Report Bug](https://github.com/bjornefisk/tutorV2/issues) · [Request Feature](https://github.com/bjornefisk/tutorV2/issues) · [Documentation](https://github.com/bjornefisk/tutorV2/wiki)
 
 </div>
