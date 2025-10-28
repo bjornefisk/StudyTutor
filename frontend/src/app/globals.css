@@ -4,32 +4,32 @@
 
 @layer base {
   :root {
-    --background: 249 250 251;
-    --foreground: 31 41 55;
+    --background: 248 250 252; /* zinc-50 */
+    --foreground: 24 24 27; /* zinc-900 */
     --card: 255 255 255;
-    --card-foreground: 31 41 55;
-    --primary: 139 92 246;
+    --card-foreground: 24 24 27;
+    --primary: 139 92 246; /* violet-500 */
     --primary-foreground: 255 255 255;
-    --secondary: 167 139 250;
-    --accent: 243 244 246;
-    --accent-foreground: 31 41 55;
-    --muted: 243 244 246;
-    --muted-foreground: 107 114 128;
-    --border: 229 231 235;
-    --input: 229 231 235;
+    --secondary: 167 139 250; /* violet-300 */
+    --accent: 244 244 245; /* zinc-100 */
+    --accent-foreground: 24 24 27;
+    --muted: 244 244 245;
+    --muted-foreground: 113 113 122; /* zinc-500 */
+    --border: 228 228 231; /* zinc-300 */
+    --input: 228 228 231;
     --ring: 139 92 246;
   }
 
   .dark {
-    --background: 15 15 17;
-    --foreground: 249 250 251;
-    --card: 26 26 29;
-    --card-foreground: 249 250 251;
+    --background: 12 12 14; /* almost black */
+    --foreground: 244 244 245; /* zinc-100 */
+    --card: 22 22 25; /* deep charcoal */
+    --card-foreground: 244 244 245;
     --primary: 139 92 246;
     --primary-foreground: 255 255 255;
     --secondary: 167 139 250;
     --accent: 39 39 42;
-    --accent-foreground: 249 250 251;
+    --accent-foreground: 244 244 245;
     --muted: 39 39 42;
     --muted-foreground: 161 161 170;
     --border: 39 39 42;
@@ -42,22 +42,30 @@
   }
 
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    @apply bg-background text-foreground transition-colors duration-300 antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer components {
   .gradient-text {
-    @apply bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-400 dark:to-purple-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 dark:from-violet-400 dark:via-fuchsia-400 dark:to-pink-400 bg-clip-text text-transparent;
   }
 
   .glass {
-    @apply bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50;
+    @apply bg-white/60 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_10px_30px_-12px_rgba(0,0,0,0.3)];
   }
 
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-glow;
+  }
+
+  .soft-shadow {
+    @apply shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_8px_40px_rgba(17,24,39,0.08)];
+  }
+
+  .radial-spotlight {
+    background: radial-gradient(1000px 600px at 50% -10%, rgba(139,92,246,0.15), rgba(139,92,246,0) 60%), radial-gradient(800px 400px at 80% 10%, rgba(236,72,153,0.12), rgba(236,72,153,0) 60%);
   }
 }
 

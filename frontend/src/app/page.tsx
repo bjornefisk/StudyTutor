@@ -166,7 +166,7 @@ export default function HomePage() {
   }, [health])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col radial-spotlight">
       <Header />
       
       <main className="flex-1">
@@ -177,7 +177,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
           {/* View Mode Tabs */}
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -273,7 +273,7 @@ export default function HomePage() {
               </aside>
 
               {/* Chat Interface */}
-              <section className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
+              <section className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/60 to-white/30 dark:from-slate-900/40 dark:to-slate-900/20 backdrop-blur-xl soft-shadow glass">
                 <ChatInterface
                   messages={messages}
                   isLoading={isSending}
@@ -286,12 +286,12 @@ export default function HomePage() {
             </div>
           ) : viewMode === 'flashcards' ? (
             /* Flashcard Manager */
-            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
+            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/60 to-white/30 dark:from-slate-900/40 dark:to-slate-900/20 backdrop-blur-xl soft-shadow glass">
               <FlashcardManager />
             </div>
           ) : (
             /* Notes Manager */
-            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
+            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/60 to-white/30 dark:from-slate-900/40 dark:to-slate-900/20 backdrop-blur-xl soft-shadow glass">
               <NotesManager />
             </div>
           )}
