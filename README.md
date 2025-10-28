@@ -1,4 +1,4 @@
-# 🎓 AI Tutor - Your Personal Study Companion
+# 🎓 AI Tutor
 
 <div align="center">
 
