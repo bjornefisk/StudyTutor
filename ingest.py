@@ -1,15 +1,3 @@
-"""
-Document Ingestion Pipeline
-
-This module handles the ingestion and indexing of study materials for the AI Tutor.
-It processes PDFs, DOCX, TXT, and Markdown files, extracts text, chunks it into
-manageable pieces, generates embeddings, and builds a FAISS vector index for
-semantic search.
-
-The ingestion process also supports PubChem compound lookups for chemistry-related
-materials by reading compound names or CIDs from pubchem.txt files.
-"""
-
 import json
 import logging
 import os
@@ -117,7 +105,6 @@ def chunk_text(text: str, max_tokens: int = 350, overlap: int = 60) -> List[str]
         text: The text to chunk
         max_tokens: Maximum tokens per chunk
         overlap: Number of tokens to overlap between chunks
-        
     Returns:
         List of text chunks
     """
