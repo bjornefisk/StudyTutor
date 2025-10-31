@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Wand2, BookOpen, Download, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -83,77 +84,77 @@ export default function FlashcardManager() {
   // List View
   if (view === 'list') {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex justify-between items-center">
+      <div className="space-y-6 bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Flashcards</h2>
-            <p className="text-muted-foreground mt-1">
+            <h2 className="font-black text-3xl uppercase tracking-tight dark:text-white">Flashcards</h2>
+            <p className="mt-1 font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">
               AI-generated flashcards for effective studying
             </p>
           </div>
           {decks.length > 0 && (
-            <Button onClick={() => setView('generate')}>
-              ✨ Generate New Deck
+            <Button onClick={() => setView('generate')} className="border-2 border-black bg-red-600 font-bold uppercase text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] inline-flex items-center gap-2">
+              <Wand2 className="h-4 w-4" /> Generate New Deck
             </Button>
           )}
         </div>
 
-        <Separator />
+        <div className="h-1 bg-black" />
 
         {isLoading ? (
           <div className="flex items-center justify-center p-12">
-            <div className="text-center space-y-4">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-              <p className="text-muted-foreground">Loading decks...</p>
+            <div className="space-y-4 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin border-4 border-black border-t-transparent"></div>
+              <p className="font-bold uppercase tracking-wide text-black/60">Loading decks...</p>
             </div>
           </div>
         ) : error ? (
-          <Card className="p-8 text-center">
-            <p className="text-destructive">{error}</p>
-            <Button onClick={loadDecks} variant="outline" className="mt-4">
+          <Card className="border-4 border-black bg-white dark:bg-gray-800 p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <p className="font-bold uppercase text-red-600">{error}</p>
+            <Button onClick={loadDecks} variant="outline" className="mt-4 border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 hover:text-black dark:hover:text-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
               Retry
             </Button>
           </Card>
         ) : decks.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-xl font-semibold mb-2">No Flashcard Decks Yet</h3>
-            <p className="text-muted-foreground mb-6">
+          <Card className="border-4 border-black bg-white dark:bg-gray-800 p-12 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <BookOpen className="mb-4 h-12 w-12 mx-auto text-black dark:text-white" />
+            <h3 className="mb-2 font-black text-xl uppercase dark:text-white">No Flashcard Decks Yet</h3>
+            <p className="mb-6 font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">
               Generate your first deck from your study materials
             </p>
-            <Button onClick={() => setView('generate')}>
+            <Button onClick={() => setView('generate')} className="border-2 border-black bg-red-600 font-bold uppercase text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
               Create First Deck
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {decks.map((deck) => (
-              <Card key={deck.id} className="hover:shadow-lg transition-shadow">
+              <Card key={deck.id} className="border-4 border-black bg-white dark:bg-gray-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg">{deck.name}</CardTitle>
-                      <CardDescription className="mt-1">
+                      <CardTitle className="font-black text-lg uppercase dark:text-white">{deck.name}</CardTitle>
+                      <CardDescription className="mt-1 font-bold text-xs uppercase tracking-wide text-black/60 dark:text-gray-400">
                         {deck.card_count} cards
                       </CardDescription>
                     </div>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="border-2 border-black bg-blue-600 font-bold text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                       {deck.card_count}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-xs text-muted-foreground">
+                  <div className="font-bold text-xs uppercase tracking-wide text-black/60 dark:text-gray-400">
                     Created {formatDate(deck.created_at)}
                   </div>
                   
                   <div className="flex flex-col gap-2">
                     <Button
                       onClick={() => handleReviewDeck(deck.id)}
-                      className="w-full"
+                      className="w-full border-2 border-black bg-blue-600 font-bold uppercase text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] inline-flex items-center justify-center gap-2"
                       size="sm"
                     >
-                      📖 Study Now
+                      <BookOpen className="h-4 w-4" /> Study Now
                     </Button>
                     
                     <div className="flex gap-2">
@@ -161,17 +162,17 @@ export default function FlashcardManager() {
                         onClick={() => handleExportDeck(deck.id, deck.name)}
                         variant="outline"
                         size="sm"
-                        className="flex-1"
+                        className="flex-1 border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:bg-yellow-400 hover:text-black dark:hover:text-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] inline-flex items-center gap-2"
                       >
-                        📥 Export
+                        <Download className="h-4 w-4" /> Export
                       </Button>
                       <Button
                         onClick={() => handleDeleteDeck(deck.id)}
                         variant="outline"
                         size="sm"
-                        className="text-destructive hover:bg-destructive/10"
+                        className="border-2 border-black bg-white dark:bg-gray-800 font-bold text-red-600 dark:text-red-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:bg-red-600 hover:text-white hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] inline-flex items-center justify-center"
                       >
-                        🗑️
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -187,22 +188,22 @@ export default function FlashcardManager() {
   // Generate View
   if (view === 'generate') {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 bg-gray-50 dark:bg-gray-900 p-6">
         <div>
           <Button
             onClick={() => setView('list')}
             variant="ghost"
-            className="mb-4"
+            className="mb-4 border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 hover:text-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
           >
             ← Back to Decks
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight">Generate Flashcards</h2>
-          <p className="text-muted-foreground mt-1">
+          <h2 className="font-black text-3xl uppercase tracking-tight dark:text-white">Generate Flashcards</h2>
+          <p className="mt-1 font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">
             AI will extract key concepts from your documents
           </p>
         </div>
 
-        <Separator />
+        <div className="h-1 bg-black" />
 
         <div className="max-w-2xl">
           <FlashcardGenerator onDeckCreated={handleDeckCreated} />
@@ -216,7 +217,7 @@ export default function FlashcardManager() {
     const currentDeck = decks.find(d => d.id === selectedDeckId)
     
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 bg-gray-50 dark:bg-gray-900 p-6">
         <div>
           <Button
             onClick={() => {
@@ -224,19 +225,19 @@ export default function FlashcardManager() {
               setSelectedDeckId(null)
             }}
             variant="ghost"
-            className="mb-4"
+            className="mb-4 border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 hover:text-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
           >
             ← Back to Decks
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight">
+          <h2 className="font-black text-3xl uppercase tracking-tight dark:text-white">
             {currentDeck?.name || 'Review Flashcards'}
           </h2>
-          <p className="text-muted-foreground mt-1">
+          <p className="mt-1 font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">
             Click cards to flip • Mark your answers
           </p>
         </div>
 
-        <Separator />
+        <div className="h-1 bg-black" />
 
         <FlashcardReview
           deckId={selectedDeckId}

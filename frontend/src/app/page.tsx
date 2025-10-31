@@ -1,26 +1,13 @@
 "use client"
 
-/**
- * Main HomePage Component
- * 
- * The primary page component for the AI Tutor application. Manages:
- * - Session state and message history
- * - File upload and document ingestion
- * - Health monitoring and status display
- * - Suggestion generation and management
- * - Responsive layout with sidebar and main chat area
- * 
- * Uses React hooks for state management and includes proper error
- * handling for API failures and network issues.
- */
-
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTheme } from '@/contexts/ThemeContext'
 import { v4 as uuid } from 'uuid'
 
-import Header from '@/components/Header'
+import BrutalistHeader from '@/components/BrutalistHeader'
+import BrutalistSidebar from '@/components/BrutalistSidebar'
 import ChatInterface from '@/components/ChatInterface'
 import FileUploadPanel from '@/components/FileUploadPanel'
-import SessionSidebar from '@/components/SessionSidebar'
 import FlashcardManager from '@/components/FlashcardManager'
 import NotesManager from '@/components/NotesManager'
 import {
@@ -47,7 +34,10 @@ export default function HomePage() {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [banner, setBanner] = useState<string>('')
-  const [useMultiQuery, setUseMultiQuery] = useState<boolean>(true)
+  const [useMultiQuery] = useState<boolean>(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { theme, toggleTheme } = useTheme()
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true)
@@ -160,92 +150,112 @@ export default function HomePage() {
     [handleCreateSession, loadSessions, sessionId]
   )
 
+  const handleNewChat = useCallback(() => {
+    const newId = uuid().slice(0, 12)
+    setSessionId(newId)
+    setMessages([])
+    setViewMode('chat')
+  }, [])
+
   const healthStatus = useMemo(() => {
     if (!health) return 'Backend status: unknown'
     return `Backend: ${health.status} • Documents indexed: ${health.documents}`
   }, [health])
 
+  const formattedSessions = sessions.map(s => ({
+    id: s.id,
+    name: s.id.slice(0, 8)
+  }))
+
+  const darkMode = theme === 'dark'
+
   return (
-    <div className="flex min-h-screen flex-col radial-spotlight">
-      <Header />
-      
-      <main className="flex-1">
+    <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Desktop Sidebar */}
+      <BrutalistSidebar
+        currentView={viewMode}
+        onViewChange={setViewMode}
+        sessions={formattedSessions}
+        onSessionSelect={handleSelectSession}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        isMobile={false}
+        onNewChat={handleNewChat}
+        darkMode={darkMode}
+      />
+
+      {/* Mobile Sidebar */}
+      <BrutalistSidebar
+        currentView={viewMode}
+        onViewChange={(view) => {
+          setViewMode(view)
+          setMobileSidebarOpen(false)
+        }}
+        sessions={formattedSessions}
+        onSessionSelect={(id) => {
+          handleSelectSession(id)
+          setMobileSidebarOpen(false)
+        }}
+        isOpen={mobileSidebarOpen}
+        onToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        onClose={() => setMobileSidebarOpen(false)}
+        isMobile={true}
+        onNewChat={() => {
+          handleNewChat()
+          setMobileSidebarOpen(false)
+        }}
+        darkMode={darkMode}
+      />
+
+      {/* Main Content */}
+      <main className="flex flex-1 flex-col overflow-hidden">
+        {/* Mobile Header */}
+        <BrutalistHeader onToggleSidebar={() => setMobileSidebarOpen(true)} darkMode={darkMode} />
+
         {/* Status Banner */}
         {banner && (
-          <div className="border-b border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-900/50 px-4 py-3">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">{banner}</p>
+          <div className={`border-b-4 border-black px-4 py-3 ${darkMode ? 'bg-yellow-400' : 'bg-yellow-400'}`}>
+            <p className="text-sm font-bold uppercase text-black">{banner}</p>
           </div>
         )}
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
-          {/* View Mode Tabs */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex rounded-lg border border-border overflow-hidden">
-                <button
-                  onClick={() => setViewMode('chat')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    viewMode === 'chat'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-background hover:bg-accent'
-                  }`}
-                >
-                  💬 Chat
-                </button>
-                <button
-                  onClick={() => setViewMode('flashcards')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    viewMode === 'flashcards'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-background hover:bg-accent'
-                  }`}
-                >
-                  📚 Flashcards
-                </button>
-                <button
-                  onClick={() => setViewMode('notes')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    viewMode === 'notes'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-background hover:bg-accent'
-                  }`}
-                >
-                  📝 Notes
-                </button>
-              </div>
-              
-              {viewMode === 'chat' && (
-                <>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className={`h-2 w-2 rounded-full ${health?.status === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
-                    <span>{healthStatus}</span>
-                  </div>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={useMultiQuery}
-                      onChange={(e) => setUseMultiQuery(e.target.checked)}
-                      className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <span className="text-muted-foreground font-medium">🔍 Multi-Query</span>
-                  </label>
-                </>
-              )}
-            </div>
+        {/* Top Bar with Upload + Theme toggle (navigation handled by sidebar) */}
+        <div className={`border-b-4 border-black px-4 py-3 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className="flex items-center justify-between">
+            {/* Upload Button (Left) */}
             {viewMode === 'chat' && (
               <button
                 type="button"
                 onClick={() => setShowUploader((prev) => !prev)}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5"
+                className={`border-2 border-black px-4 py-2 text-sm font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                  darkMode ? 'bg-blue-600 text-white hover:bg-red-600' : 'bg-blue-600 text-white hover:bg-red-600'
+                }`}
               >
-                {showUploader ? 'Hide Upload' : '📁 Upload Files'}
+                {showUploader ? '✕ Hide Upload' : '📁 Upload Files'}
               </button>
             )}
-          </div>
+            {viewMode !== 'chat' && <div />}
 
+            {/* Theme toggle (right) */}
+            <div className="flex items-center gap-3">
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={toggleTheme}
+                className={`border-2 border-black px-3 py-2 text-sm font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                  darkMode ? 'bg-yellow-400 text-black' : 'bg-black text-white'
+                }`}
+              >
+                {darkMode ? '☀️' : '🌙'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Page Content */}
+        <div className="flex-1 overflow-hidden flex flex-col">
           {/* Upload Panel */}
           {showUploader && viewMode === 'chat' && (
-            <div className="mb-6 animate-slide-up">
+            <div className="border-b-4 border-black animate-slide-up">
               <FileUploadPanel
                 onClose={() => setShowUploader(false)}
                 onIngestionStarted={() => setBanner('Ingestion started. Refresh sessions after it completes.')}
@@ -253,45 +263,29 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Conditional Content Based on View Mode */}
-          {viewMode === 'chat' ? (
-            /* Main Content Grid */
-            <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-              {/* Sidebar */}
-              <aside className="hidden lg:block">
-                <div className="sticky top-20">
-                  <SessionSidebar
-                    sessions={sessions}
-                    isLoading={sessionsLoading}
-                    currentSessionId={sessionId}
-                    onCreate={() => void handleCreateSession()}
-                    onSelect={(id) => void handleSelectSession(id)}
-                    onDelete={(id) => void handleDeleteSession(id)}
-                    onRefresh={() => void loadSessions()}
-                  />
-                </div>
-              </aside>
-
-              {/* Chat Interface */}
-              <section className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/60 to-white/30 dark:from-slate-900/40 dark:to-slate-900/20 backdrop-blur-xl soft-shadow glass">
-                <ChatInterface
-                  messages={messages}
-                  isLoading={isSending}
-                  onSend={handleSend}
-                  suggestions={suggestions}
-                  onSuggestionSelect={handleSuggestionSelect}
-                  onSuggestionSearch={handleSuggestionSearch}
-                />
-              </section>
+          {/* Views */}
+          {viewMode === 'chat' && (
+            <div className="flex-1 overflow-hidden">
+              <ChatInterface
+                messages={messages}
+                isLoading={isSending}
+                onSend={handleSend}
+                suggestions={suggestions}
+                onSuggestionSelect={handleSuggestionSelect}
+                onSuggestionSearch={handleSuggestionSearch}
+                darkMode={darkMode}
+              />
             </div>
-          ) : viewMode === 'flashcards' ? (
-            /* Flashcard Manager */
-            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/60 to-white/30 dark:from-slate-900/40 dark:to-slate-900/20 backdrop-blur-xl soft-shadow glass">
+          )}
+
+          {viewMode === 'flashcards' && (
+            <div className="flex-1 overflow-auto">
               <FlashcardManager />
             </div>
-          ) : (
-            /* Notes Manager */
-            <div className="relative min-h-[calc(100vh-16rem)] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/60 to-white/30 dark:from-slate-900/40 dark:to-slate-900/20 backdrop-blur-xl soft-shadow glass">
+          )}
+
+          {viewMode === 'notes' && (
+            <div className="flex-1 overflow-auto">
               <NotesManager />
             </div>
           )}

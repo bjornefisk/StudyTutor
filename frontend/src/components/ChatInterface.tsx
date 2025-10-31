@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import clsx from 'clsx'
+import { Send } from 'lucide-react'
 
 import type { Message } from '@/types'
 
@@ -27,6 +28,7 @@ interface ChatInterfaceProps {
   suggestions: string[]
   onSuggestionSelect: (suggestion: string) => void
   onSuggestionSearch: (prefix: string) => void
+  darkMode?: boolean
 }
 
 export default function ChatInterface({
@@ -35,7 +37,8 @@ export default function ChatInterface({
   onSend,
   suggestions,
   onSuggestionSelect,
-  onSuggestionSearch
+  onSuggestionSearch,
+  darkMode = false
 }: ChatInterfaceProps) {
   const [draft, setDraft] = useState('')
   const [suggestionQuery, setSuggestionQuery] = useState('')
@@ -84,73 +87,86 @@ export default function ChatInterface({
   )
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-900/60 via-slate-900/80 to-blue-900/60" aria-hidden="true" />
-      <div className="absolute -top-32 left-10 h-64 w-64 rounded-full bg-purple-500/30 blur-3xl" aria-hidden="true" />
-      <div className="absolute -bottom-40 right-10 h-72 w-72 rounded-full bg-blue-500/30 blur-[120px]" aria-hidden="true" />
-
-      <div className="relative flex h-full flex-col">
-        <div
-          ref={containerRef}
-          className="flex-1 space-y-5 overflow-y-auto px-5 py-8 sm:px-8"
-          aria-live="polite"
-        >
+    <div className={`flex h-full flex-col ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Messages Area - Scrollable */}
+      <div
+        ref={containerRef}
+        className="flex-1 space-y-5 overflow-y-auto px-4 py-6 md:px-6"
+        aria-live="polite"
+      >
+        <div className="mx-auto max-w-4xl space-y-4">
           {messages.length === 0 && !isLoading ? (
-            <div className="flex h-full flex-col items-center justify-center text-center text-slate-200">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl shadow-lg backdrop-blur">🎓</div>
-              <h2 className="bg-gradient-to-r from-purple-200 via-pink-200 to-blue-200 bg-clip-text text-2xl font-semibold text-transparent md:text-3xl">
-                Study Assistant
+            <div className="flex h-full flex-col items-center justify-center py-20 text-center">
+              <div className="relative mb-8 h-24 w-24">
+                <div className="absolute left-0 top-0 h-16 w-16 border-4 border-black bg-red-600"></div>
+                <div className="absolute bottom-0 right-0 h-16 w-16 border-4 border-black bg-yellow-400"></div>
+                <div className="absolute left-8 top-8 h-8 w-8 rounded-full border-4 border-black bg-blue-600"></div>
+              </div>
+              <h2 className={`mb-3 font-black text-3xl uppercase tracking-tight ${darkMode ? 'text-white' : 'text-black'}`}>
+                Start Session
               </h2>
-              <p className="mt-3 max-w-md text-sm text-slate-300 md:text-base">
-                Upload documents, then ask questions. Responses reference the most relevant passages.
+              <p className={`max-w-md font-bold text-sm uppercase tracking-wider ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Upload documents and ask questions
               </p>
             </div>
           ) : (
             messages.map((message) => (
               <div
                 key={`${message.role}-${message.timestamp}`}
-                className={clsx('flex transition-all duration-300', {
+                className={clsx('flex transition-all duration-200', {
                   'justify-end': message.role === 'user',
                   'justify-start': message.role !== 'user'
                 })}
               >
                 <div
                   className={clsx(
-                    'max-w-2xl rounded-3xl px-6 py-5 shadow-xl transition-all duration-300',
+                    'max-w-2xl border-4 border-black px-6 py-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]',
                     message.role === 'user'
-                      ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white shadow-purple-500/40'
-                      : 'border border-white/10 bg-white/10 text-slate-50 backdrop-blur-xl dark:bg-slate-900/60'
+                      ? darkMode ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
+                      : darkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'
                   )}
                 >
                   {message.role === 'assistant' ? (
-                    <div className="prose prose-invert max-w-none text-sm md:text-base">
+                    <div className={`prose max-w-none text-sm prose-headings:font-black prose-headings:uppercase prose-strong:font-black prose-a:font-bold prose-a:text-red-600 prose-a:underline md:text-base ${
+                      darkMode ? 'prose-invert' : ''
+                    }`}>
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                     </div>
                   ) : (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed md:text-base">
+                    <p className="whitespace-pre-wrap text-sm font-bold leading-relaxed md:text-base">
                       {message.content}
                     </p>
                   )}
 
-                  <div className="mt-3 text-xs text-slate-200/70">
+                  <div
+                    className={clsx('mt-3 font-bold text-xs uppercase tracking-wide', 
+                      message.role === 'user' ? 'text-white/70' : darkMode ? 'text-gray-400' : 'text-black/50'
+                    )}
+                  >
                     {new Date(message.timestamp).toLocaleString()}
                   </div>
 
                   {message.sources && message.sources.length > 0 && (
-                    <div className="mt-4 space-y-3 rounded-2xl border border-white/15 bg-white/5 p-4 text-slate-100 shadow-inner backdrop-blur-md">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-200/80">
+                    <div className={`mt-4 space-y-3 border-2 border-black p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                      darkMode ? 'bg-yellow-400' : 'bg-yellow-400'
+                    }`}>
+                      <div className="font-black text-xs uppercase tracking-wide text-black">
                         Sources
                       </div>
                       {message.sources.map((source) => (
                         <div
                           key={`${source.source}-${source.chunk_index}`}
-                          className="rounded-xl border border-white/10 bg-black/10 p-3 text-xs text-slate-100 transition hover:border-purple-300/40"
+                          className={`border-2 border-black p-3 text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                            darkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'
+                          }`}
                         >
-                          <div className="font-medium text-slate-100">
+                          <div className={`font-bold ${darkMode ? 'text-white' : 'text-black'}`}>
                             {source.source} • page {source.page}, chunk {source.chunk_index}
                           </div>
-                          <div className="mt-1 line-clamp-2 text-slate-200/80">{source.text}</div>
-                          <div className="mt-2 text-[11px] uppercase tracking-wide text-slate-300/70">
+                          <div className={`mt-1 line-clamp-2 ${darkMode ? 'text-gray-300' : 'text-black/70'}`}>
+                            {source.text}
+                          </div>
+                          <div className={`mt-2 font-bold text-[11px] uppercase tracking-wide ${darkMode ? 'text-gray-400' : 'text-black/60'}`}>
                             Relevance {(source.score * 100).toFixed(1)}%
                           </div>
                         </div>
@@ -164,66 +180,73 @@ export default function ChatInterface({
 
           {isLoading && (
             <div className="flex justify-start">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white shadow-lg backdrop-blur">
-                <span className="h-2 w-2 animate-ping rounded-full bg-purple-300" />
+              <div className={`flex items-center gap-3 border-2 border-black px-4 py-3 text-sm font-bold uppercase tracking-wide shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                darkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'
+              }`}>
+                <span className="h-2 w-2 animate-ping rounded-full bg-red-600" />
                 <span>Thinking…</span>
               </div>
             </div>
           )}
         </div>
+      </div>
 
-        <div className="border-t border-white/10 bg-black/30 px-4 py-5 shadow-inner backdrop-blur md:px-6">
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <label className="sr-only" htmlFor="suggestion-search">
-              Search prompts
-            </label>
-            <input
-              id="suggestion-search"
-              value={suggestionQuery}
-              onChange={(event) => setSuggestionQuery(event.target.value)}
-              placeholder="Search helpful prompts"
-              className="h-11 rounded-xl border border-white/10 bg-white/10 px-4 text-sm text-white placeholder:text-slate-300 focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400/40"
-            />
-            <div className="flex flex-1 flex-wrap gap-2">
-              {suggestions.map((suggestion) => (
-                <button
-                  type="button"
-                  key={suggestion}
-                  onClick={() => onSuggestionSelect(suggestion)}
-                  className="group rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-300/40 hover:bg-white/20"
-                >
-                  <span className="bg-gradient-to-r from-purple-200 via-pink-200 to-blue-200 bg-clip-text text-transparent">
-                    {suggestion}
-                  </span>
-                </button>
-              ))}
-            </div>
+      {/* Input Area - Fixed at Bottom */}
+      <div className={`border-t-4 border-black px-4 py-5 md:px-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <label className="sr-only" htmlFor="suggestion-search">
+            Search prompts
+          </label>
+          <input
+            id="suggestion-search"
+            value={suggestionQuery}
+            onChange={(event) => setSuggestionQuery(event.target.value)}
+            placeholder="SEARCH PROMPTS"
+            className={`h-11 border-2 border-black px-4 text-sm font-bold uppercase tracking-wide shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:border-black focus:outline-none focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
+              darkMode ? 'bg-gray-700 text-white placeholder:text-gray-400' : 'bg-white text-black placeholder:text-black/40'
+            }`}
+          />
+          <div className="flex flex-1 flex-wrap gap-2">
+            {suggestions.map((suggestion) => (
+              <button
+                type="button"
+                key={suggestion}
+                onClick={() => onSuggestionSelect(suggestion)}
+                className={`group border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                  darkMode ? 'bg-gray-700 text-white' : 'bg-white text-black'
+                }`}
+              >
+                {suggestion}
+              </button>
+            ))}
           </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <textarea
-              ref={textareaRef}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              className="max-h-40 min-h-[64px] flex-1 resize-none rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white shadow-lg shadow-purple-500/20 backdrop-blur focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400/40 md:text-base"
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={() => void handleSend()}
-              disabled={isLoading || !draft.trim()}
-              className="group flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-sm font-semibold text-white shadow-xl shadow-purple-500/30 transition-all duration-300 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-16"
-              aria-label="Send message"
-            >
-              <span className="transition-transform group-hover:translate-x-0.5">➤</span>
-            </button>
-          </div>
-          <p className="mt-3 text-center text-xs text-slate-300">
-            Press Enter to send · Shift + Enter for a new line
-          </p>
         </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <textarea
+            ref={textareaRef}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="TYPE YOUR MESSAGE HERE..."
+            className={`max-h-40 min-h-[64px] flex-1 resize-none border-4 border-black px-4 py-3 text-sm font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] placeholder:font-bold placeholder:uppercase placeholder:tracking-wide focus:border-black focus:outline-none focus:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 md:text-base ${
+              darkMode ? 'bg-gray-700 text-white placeholder:text-gray-400' : 'bg-white text-black placeholder:text-black/40'
+            }`}
+            disabled={isLoading}
+          />
+          <button
+            type="button"
+            onClick={() => void handleSend()}
+            disabled={isLoading || !draft.trim()}
+            className="group flex h-14 w-full items-center justify-center border-4 border-black bg-black text-sm font-black uppercase tracking-wide text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-red-600 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:w-16"
+            aria-label="Send message"
+          >
+            <Send className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+          </button>
+        </div>
+        <p className={`mt-3 text-center font-bold text-xs uppercase tracking-wide ${darkMode ? 'text-gray-400' : 'text-black/60'}`}>
+          Press Enter to send · Shift + Enter for a new line
+        </p>
       </div>
     </div>
   )

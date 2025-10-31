@@ -1,49 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 248 250 252; /* zinc-50 */
-    --foreground: 24 24 27; /* zinc-900 */
+    --background: 249 250 251; /* gray-50 */
+    --foreground: 0 0 0; /* black */
     --card: 255 255 255;
-    --card-foreground: 24 24 27;
-    --primary: 139 92 246; /* violet-500 */
+    --card-foreground: 0 0 0;
+    --primary: 220 38 38; /* red-600 */
     --primary-foreground: 255 255 255;
-    --secondary: 167 139 250; /* violet-300 */
-    --accent: 244 244 245; /* zinc-100 */
-    --accent-foreground: 24 24 27;
-    --muted: 244 244 245;
-    --muted-foreground: 113 113 122; /* zinc-500 */
-    --border: 228 228 231; /* zinc-300 */
-    --input: 228 228 231;
-    --ring: 139 92 246;
+    --secondary: 250 204 21; /* yellow-400 */
+    --accent: 37 99 235; /* blue-600 */
+    --accent-foreground: 255 255 255;
+    --muted: 243 244 246; /* gray-100 */
+    --muted-foreground: 75 85 99; /* gray-600 */
+    --border: 0 0 0; /* black */
+    --input: 255 255 255;
+    --ring: 0 0 0;
   }
 
   .dark {
-    --background: 12 12 14; /* almost black */
-    --foreground: 244 244 245; /* zinc-100 */
-    --card: 22 22 25; /* deep charcoal */
-    --card-foreground: 244 244 245;
-    --primary: 139 92 246;
+    --background: 17 24 39; /* gray-900 */
+    --foreground: 255 255 255;
+    --card: 31 41 55; /* gray-800 */
+    --card-foreground: 255 255 255;
+    --primary: 220 38 38;
     --primary-foreground: 255 255 255;
-    --secondary: 167 139 250;
-    --accent: 39 39 42;
-    --accent-foreground: 244 244 245;
-    --muted: 39 39 42;
-    --muted-foreground: 161 161 170;
-    --border: 39 39 42;
-    --input: 39 39 42;
-    --ring: 139 92 246;
+    --secondary: 250 204 21;
+    --accent: 37 99 235;
+    --accent-foreground: 255 255 255;
+    --muted: 55 65 81;
+    --muted-foreground: 156 163 175;
+    --border: 0 0 0;
+    --input: 31 41 55;
+    --ring: 0 0 0;
   }
 
   * {
     @apply border-border;
+    font-family: 'Work Sans', -apple-system, sans-serif;
   }
 
   body {
-    @apply bg-background text-foreground transition-colors duration-300 antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
