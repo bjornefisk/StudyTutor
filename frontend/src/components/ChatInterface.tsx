@@ -99,10 +99,10 @@ export default function ChatInterface({
             <div className="flex h-full flex-col items-center justify-center text-center text-slate-200">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl shadow-lg backdrop-blur">🎓</div>
               <h2 className="bg-gradient-to-r from-purple-200 via-pink-200 to-blue-200 bg-clip-text text-2xl font-semibold text-transparent md:text-3xl">
-                Welcome to your AI tutor
+                Study Assistant
               </h2>
               <p className="mt-3 max-w-md text-sm text-slate-300 md:text-base">
-                Upload documents, then ask focused questions. Responses reference the most relevant passages so you can review quickly.
+                Upload documents, then ask questions. Responses reference the most relevant passages.
               </p>
             </div>
           ) : (

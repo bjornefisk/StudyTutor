@@ -125,7 +125,7 @@ export default function NoteEditor({ note, onSave, onCancel }: NoteEditorProps) 
           <CardHeader>
             <CardTitle>{note ? 'Edit Note' : 'New Note'}</CardTitle>
             <CardDescription>
-              Start typing to get AI-powered suggestions from your documents
+              Start typing to get suggestions from your documents
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -248,7 +248,7 @@ export default function NoteEditor({ note, onSave, onCancel }: NoteEditorProps) 
               </Button>
             </div>
             <CardDescription>
-              AI-powered suggestions from your documents
+              Suggestions from your documents
             </CardDescription>
           </CardHeader>
           {showSuggestions && (

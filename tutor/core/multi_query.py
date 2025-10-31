@@ -1,13 +1,4 @@
-"""
-Multi-Query Retrieval Module
-
-Generates multiple search queries from a single user question to improve
-retrieval quality. This technique helps capture different phrasings and
-perspectives of the same question, leading to more comprehensive results.
-
-Research shows this can improve answer quality by 30-40% compared to
-single-query retrieval.
-"""
+"""Multi-query retrieval for improved search results."""
 
 from __future__ import annotations
 
@@ -26,21 +17,10 @@ def generate_multi_queries(
     num_queries: int = 3,
     use_llm: bool = True
 ) -> List[str]:
-    """
-    Generate multiple alternative phrasings of a query.
-    
-    Args:
-        original_query: The user's original question
-        num_queries: Number of alternative queries to generate (default: 3)
-        use_llm: Whether to use LLM for generation or fall back to heuristics
-        
-    Returns:
-        List of query variations including the original
-    """
     if not original_query.strip():
         return [original_query]
     
-    queries = [original_query]  # Always include original
+    queries = [original_query]
     
     if use_llm:
         try:

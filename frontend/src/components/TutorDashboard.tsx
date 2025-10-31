@@ -130,7 +130,7 @@ export default function TutorDashboard({
                 AI Tutor
               </h1>
               <p className="mt-1 max-w-2xl text-sm text-slate-300 md:text-base">
-                Continue your study sessions, ingest new material, and explore insights with a responsive AI companion.
+                Continue your study sessions, ingest new material, and explore insights.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -435,7 +435,7 @@ export default function TutorDashboard({
                     <Separator className="bg-white/10" />
                     <div className="space-y-4 overflow-y-auto pr-1 text-sm max-h-[320px]">
                       {messages.length === 0 ? (
-                        <p className="text-slate-300">No messages yet. Start the conversation!</p>
+                        <p className="text-slate-300">No messages yet.</p>
                       ) : (
                         messages.map((message) => (
                           <div

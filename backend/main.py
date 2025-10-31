@@ -1,15 +1,4 @@
-"""FastAPI backend exposing the tutor RAG capabilities.
-
-This module provides a REST API for the AI Tutor application, handling:
-- Chat interactions with document-based Q&A
-- File uploads and document ingestion
-- Session management and history
-- Health monitoring and status checks
-- AI-powered question suggestions
-
-The API uses FastAPI with async/await patterns and includes proper error handling,
-CORS configuration, and background task processing for document ingestion.
-"""
+"""FastAPI backend for document Q&A."""
 from __future__ import annotations
 
 import logging
@@ -98,10 +87,10 @@ refresh_resources()
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, description="User prompt")
-    session_id: Optional[str] = Field(default=None, description="Existing session identifier")
-    top_k: Optional[int] = Field(default=None, ge=1, le=20, description="Override number of retrieved chunks")
-    use_multi_query: Optional[bool] = Field(default=None, description="Enable multi-query retrieval for better results")
+    message: str = Field(..., min_length=1)
+    session_id: Optional[str] = Field(default=None)
+    top_k: Optional[int] = Field(default=None, ge=1, le=20)
+    use_multi_query: Optional[bool] = Field(default=None)
 
 
 class Source(BaseModel):
@@ -135,10 +124,10 @@ class SuggestionRequest(BaseModel):
 
 
 class FlashcardGenerateRequest(BaseModel):
-    document_names: List[str] = Field(..., description="List of document names to generate flashcards from")
-    num_cards: int = Field(default=10, ge=1, le=50, description="Number of flashcards to generate")
+    document_names: List[str]
+    num_cards: int = Field(default=10, ge=1, le=50)
     difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
-    deck_name: str = Field(..., min_length=1, description="Name for the flashcard deck")
+    deck_name: str = Field(..., min_length=1)
 
 
 class FlashcardDeck(BaseModel):
@@ -178,10 +167,10 @@ class FlashcardReviewRequest(BaseModel):
 
 
 class NoteCreate(BaseModel):
-    title: str = Field(..., min_length=1, description="Note title")
-    content: str = Field(default="", description="Note content (markdown supported)")
-    tags: List[str] = Field(default_factory=list, description="Tags for organization")
-    linked_sources: List[dict] = Field(default_factory=list, description="Linked source citations")
+    title: str = Field(..., min_length=1)
+    content: str = Field(default="")
+    tags: List[str] = Field(default_factory=list)
+    linked_sources: List[dict] = Field(default_factory=list)
 
 
 class NoteUpdate(BaseModel):
@@ -192,8 +181,8 @@ class NoteUpdate(BaseModel):
 
 
 class NoteSuggestionRequest(BaseModel):
-    content: str = Field(..., description="Current note content to get suggestions for")
-    top_k: int = Field(default=3, ge=1, le=10, description="Number of suggestions to return")
+    content: str
+    top_k: int = Field(default=3, ge=1, le=10)
 
 
 class AddSourceRequest(BaseModel):
@@ -699,7 +688,7 @@ async def export_all_notes_endpoint():
     )
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

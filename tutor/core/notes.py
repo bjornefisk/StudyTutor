@@ -1,11 +1,4 @@
-"""Smart note-taking system with RAG-powered suggestions.
-
-This module provides functionality for:
-- Creating and managing study notes
-- Live suggestions from uploaded documents
-- Automatic citation tracking
-- Export with proper references
-"""
+"""Note-taking system with document suggestions."""
 from __future__ import annotations
 
 import json
@@ -34,17 +27,6 @@ def create_note(
     tags: List[str] = None,
     linked_sources: List[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
-    """Create a new note with automatic citation tracking.
-    
-    Args:
-        title: Note title
-        content: Note content (markdown supported)
-        tags: Optional list of tags
-        linked_sources: Optional list of source citations
-        
-    Returns:
-        Created note dictionary
-    """
     ensure_notes_dir()
     
     note_id = uuid.uuid4().hex[:12]
@@ -76,18 +58,6 @@ def update_note(
     tags: Optional[List[str]] = None,
     linked_sources: Optional[List[Dict[str, Any]]] = None
 ) -> Optional[Dict[str, Any]]:
-    """Update an existing note.
-    
-    Args:
-        note_id: Note identifier
-        title: New title (optional)
-        content: New content (optional)
-        tags: New tags (optional)
-        linked_sources: New linked sources (optional)
-        
-    Returns:
-        Updated note dictionary or None if not found
-    """
     note = get_note(note_id)
     if not note:
         return None

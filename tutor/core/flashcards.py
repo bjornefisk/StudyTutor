@@ -1,11 +1,4 @@
-"""Flashcard generation and management module.
-
-This module provides functionality for:
-- AI-powered flashcard generation from document chunks
-- Flashcard storage and retrieval
-- Anki deck export (.apkg format)
-- Spaced repetition metadata tracking
-"""
+"""Flashcard generation and management."""
 from __future__ import annotations
 
 import json
@@ -32,15 +25,6 @@ def ensure_flashcards_dir() -> None:
 
 
 def _extract_key_concepts(text: str, num_concepts: int = 5) -> List[str]:
-    """First pass: Extract main concepts and themes from the document.
-    
-    Args:
-        text: The document text to analyze
-        num_concepts: Number of key concepts to extract
-        
-    Returns:
-        List of key concepts/themes
-    """
     prompt = f"""Analyze this educational material and identify the {num_concepts} MOST IMPORTANT concepts, theories, or ideas.
 
 Focus on:
@@ -93,21 +77,6 @@ def generate_flashcards_from_text(
     num_cards: int = 10,
     difficulty: str = "medium"
 ) -> List[Dict[str, Any]]:
-    """Generate conceptual flashcards from document text using multi-pass LLM analysis.
-    
-    This uses a two-pass approach:
-    1. Extract key concepts and themes from the full document
-    2. Generate deep conceptual questions about those concepts
-    
-    Args:
-        text: The document text to extract concepts from (NO LENGTH LIMIT)
-        document_name: Name of the source document
-        num_cards: Number of flashcards to generate (default: 10)
-        difficulty: Target difficulty level - easy, medium, or hard
-        
-    Returns:
-        List of flashcard dictionaries with front, back, tags, and metadata
-    """
     difficulty_config = {
         "easy": {
             "description": "Basic understanding and recall of core concepts",

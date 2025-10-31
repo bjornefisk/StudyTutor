@@ -74,7 +74,7 @@ def load_index_and_meta(force_reload: bool = False) -> Tuple[Optional[faiss.Inde
                         f"dim: stored={cfg.get('dim')} current={index.d}"
                     )
                 _log_index_mismatch(mismatches)
-        except Exception as exc:  # pragma: no cover - best-effort diagnostics
+        except Exception as exc:
             logging.debug("Index metadata validation failed: %s", exc)
 
         _INDEX_CACHE = (index, metas)

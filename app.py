@@ -1,11 +1,4 @@
-"""
-AI Tutor - Streamlit Web Interface
-
-A local-first AI study companion that helps students learn from their own materials.
-Upload PDFs, textbooks, or notes and chat with an AI tutor that knows your content.
-
-This module provides the main Streamlit web interface for the AI Tutor application.
-"""
+"""Streamlit interface for document Q&A."""
 
 import json
 import os
@@ -37,22 +30,7 @@ load_dotenv()
 
  
 
-def _build_suggestions(metas: List[dict], prefix: str = "", limit: int = 10) -> List[str]:
-    """
-    Build question suggestions based on document metadata.
-    
-    This is a backwards compatibility wrapper for the build_suggestions function
-    from the core module to keep existing call sites unchanged.
-    
-    Args:
-        metas: List of document metadata dictionaries
-        prefix: Optional prefix to filter suggestions
-        limit: Maximum number of suggestions to return
-        
-    Returns:
-        List of suggested questions
-    """
-    return build_suggestions(metas, prefix=prefix, limit=limit)
+
 
 st.set_page_config(page_title="AI Tutor", page_icon="🎓", layout="centered", initial_sidebar_state="collapsed")
 ensure_app_dirs()
@@ -210,10 +188,10 @@ for m in view_messages[-200:]:
 
 # Suggestion helper UI (above input)
 with st.expander("💡 Question Suggestions", expanded=False):
-    st.caption("Get AI-powered question suggestions based on your study materials")
+    st.caption("Get question suggestions based on your study materials")
     suggestions_prefix = st.text_input("Filter suggestions (optional)", value="", placeholder="What is...")
     try:
-        suggs = _build_suggestions(metas, prefix=suggestions_prefix, limit=6)
+        suggs = build_suggestions(metas, prefix=suggestions_prefix, limit=6)
     except Exception as e:
         st.warning(f"Could not generate suggestions: {e}")
         suggs = []

@@ -1,15 +1,3 @@
-/**
- * API client for interacting with the FastAPI backend.
- * 
- * This module provides typed functions for all backend API calls including:
- * - Chat interactions and message handling
- * - File uploads and document management
- * - Session management and history
- * - Health checks and status monitoring
- * - AI-powered suggestion generation
- * 
- * All functions include proper error handling and timeout configuration.
- */
 import axios from 'axios'
 
 import type {
@@ -64,7 +52,7 @@ export async function postChat(
     if (axios.isAxiosError(error)) {
       const status = error.response?.status
       if (status === 503) {
-        throw new Error('AI service is not ready. Please upload documents and run ingestion first.')
+        throw new Error('Index not ready. Upload documents and run ingestion first.')
       }
       throw new Error(`Chat failed: ${error.response?.data?.detail || error.message}`)
     }

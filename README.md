@@ -1,4 +1,4 @@
-# AI Tutor
+# Study Tutor
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -7,7 +7,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-3.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-Local‑first AI study companion. It indexes your PDFs/notes and provides RAG‑powered chat, flashcards, and note‑taking—all running on your machine.
+Document-based Q&A system. Index your PDFs and notes to answer questions with RAG retrieval.
 
 ## Setup
 

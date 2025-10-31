@@ -1,12 +1,4 @@
-"""
-AI Tutor CLI Interface
-
-A command-line interface for the AI Tutor that allows quick question-answering
-without the web interface. Perfect for terminal-based workflows or quick lookups.
-
-Usage:
-    python quick.cli.py "What is the difference between X and Y?"
-"""
+"""CLI for quick document Q&A."""
 
 import os
 import sys
