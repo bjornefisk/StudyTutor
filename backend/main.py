@@ -1,4 +1,15 @@
-"""FastAPI backend for document Q&A."""
+"""FastAPI backend exposing the tutor RAG capabilities.
+
+This module provides a REST API for the AI Tutor application, handling:
+- Chat interactions with document-based Q&A
+- File uploads and document ingestion
+- Session management and history
+- Health monitoring and status checks
+- AI-powered question suggestions
+
+The API uses FastAPI with async/await patterns and includes proper error handling,
+CORS configuration, and background task processing for document ingestion.
+"""
 from __future__ import annotations
 
 import logging
@@ -7,7 +18,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from threading import Lock
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -72,7 +83,7 @@ app.add_middleware(
 _RESOURCE_LOCK = Lock()
 _INDEX = None
 _METAS: List[dict] = []
-_EMBED_FN: Optional[Callable[[List[str]], object]] = None
+_EMBED_FN: Optional[Callable[[List[str]], Any]] = None
 
 
 def refresh_resources(force_reload: bool = False) -> None:
@@ -87,10 +98,10 @@ refresh_resources()
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1)
-    session_id: Optional[str] = Field(default=None)
-    top_k: Optional[int] = Field(default=None, ge=1, le=20)
-    use_multi_query: Optional[bool] = Field(default=None)
+    message: str = Field(..., min_length=1, description="User prompt")
+    session_id: Optional[str] = Field(default=None, description="Existing session identifier")
+    top_k: Optional[int] = Field(default=None, ge=1, le=20, description="Override number of retrieved chunks")
+    use_multi_query: Optional[bool] = Field(default=None, description="Enable multi-query retrieval for better results")
 
 
 class Source(BaseModel):
@@ -124,10 +135,10 @@ class SuggestionRequest(BaseModel):
 
 
 class FlashcardGenerateRequest(BaseModel):
-    document_names: List[str]
-    num_cards: int = Field(default=10, ge=1, le=50)
+    document_names: List[str] = Field(..., description="List of document names to generate flashcards from")
+    num_cards: int = Field(default=10, ge=1, le=50, description="Number of flashcards to generate")
     difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
-    deck_name: str = Field(..., min_length=1)
+    deck_name: str = Field(..., min_length=1, description="Name for the flashcard deck")
 
 
 class FlashcardDeck(BaseModel):
@@ -167,10 +178,10 @@ class FlashcardReviewRequest(BaseModel):
 
 
 class NoteCreate(BaseModel):
-    title: str = Field(..., min_length=1)
-    content: str = Field(default="")
-    tags: List[str] = Field(default_factory=list)
-    linked_sources: List[dict] = Field(default_factory=list)
+    title: str = Field(..., min_length=1, description="Note title")
+    content: str = Field(default="", description="Note content (markdown supported)")
+    tags: List[str] = Field(default_factory=list, description="Tags for organization")
+    linked_sources: List[dict] = Field(default_factory=list, description="Linked source citations")
 
 
 class NoteUpdate(BaseModel):
@@ -181,8 +192,8 @@ class NoteUpdate(BaseModel):
 
 
 class NoteSuggestionRequest(BaseModel):
-    content: str
-    top_k: int = Field(default=3, ge=1, le=10)
+    content: str = Field(..., description="Current note content to get suggestions for")
+    top_k: int = Field(default=3, ge=1, le=10, description="Number of suggestions to return")
 
 
 class AddSourceRequest(BaseModel):
@@ -235,6 +246,9 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
     k = request.top_k or TOP_K
     use_mq = request.use_multi_query if request.use_multi_query is not None else USE_MULTI_QUERY
+
+    if _EMBED_FN is None:
+        raise HTTPException(status_code=503, detail="Embedding function not initialized.")
 
     hits = retrieve(
         prompt, 
@@ -519,6 +533,9 @@ async def export_deck_to_anki(deck_id: str):
         raise HTTPException(status_code=404, detail="Deck not found or export failed")
     
     deck = load_flashcard_deck(deck_id)
+    if not deck:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    
     filename = f"{deck['name'].replace(' ', '_')}.apkg"
     
     return Response(
@@ -622,6 +639,9 @@ async def get_note_suggestions(request: NoteSuggestionRequest) -> dict:
     query_text = request.content[-500:].strip()
     
     try:
+        if _EMBED_FN is None:
+            raise HTTPException(status_code=503, detail="Embedding function not initialized.")
+        
         # Use existing RAG retrieval
         hits = retrieve(
             query_text,
@@ -659,6 +679,9 @@ async def export_note_endpoint(note_id: str):
         raise HTTPException(status_code=404, detail="Note not found")
     
     note = get_note(note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
     filename = f"{note['title'].replace(' ', '_')}.md"
     
     return Response(
@@ -688,7 +711,7 @@ async def export_all_notes_endpoint():
     )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     import uvicorn
 
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

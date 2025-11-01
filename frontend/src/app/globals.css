@@ -4,109 +4,132 @@
 @tailwind components;
 @tailwind utilities;
 
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #030213;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #030213;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
 @layer base {
-  :root {
-    --background: 249 250 251; /* gray-50 */
-    --foreground: 0 0 0; /* black */
-    --card: 255 255 255;
-    --card-foreground: 0 0 0;
-    --primary: 220 38 38; /* red-600 */
-    --primary-foreground: 255 255 255;
-    --secondary: 250 204 21; /* yellow-400 */
-    --accent: 37 99 235; /* blue-600 */
-    --accent-foreground: 255 255 255;
-    --muted: 243 244 246; /* gray-100 */
-    --muted-foreground: 75 85 99; /* gray-600 */
-    --border: 0 0 0; /* black */
-    --input: 255 255 255;
-    --ring: 0 0 0;
-  }
-
-  .dark {
-    --background: 17 24 39; /* gray-900 */
-    --foreground: 255 255 255;
-    --card: 31 41 55; /* gray-800 */
-    --card-foreground: 255 255 255;
-    --primary: 220 38 38;
-    --primary-foreground: 255 255 255;
-    --secondary: 250 204 21;
-    --accent: 37 99 235;
-    --accent-foreground: 255 255 255;
-    --muted: 55 65 81;
-    --muted-foreground: 156 163 175;
-    --border: 0 0 0;
-    --input: 31 41 55;
-    --ring: 0 0 0;
-  }
-
   * {
-    @apply border-border;
-    font-family: 'Work Sans', -apple-system, sans-serif;
+    @apply border-border outline-ring/50;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground;
   }
 }
 
-@layer components {
-  .gradient-text {
-    @apply bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 dark:from-violet-400 dark:via-fuchsia-400 dark:to-pink-400 bg-clip-text text-transparent;
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      @apply text-2xl font-medium leading-normal;
+    }
+
+    h2 {
+      @apply text-xl font-medium leading-normal;
+    }
+
+    h3 {
+      @apply text-lg font-medium leading-normal;
+    }
+
+    h4 {
+      @apply text-base font-medium leading-normal;
+    }
+
+    p {
+      @apply text-base font-normal leading-normal;
+    }
+
+    label {
+      @apply text-base font-medium leading-normal;
+    }
+
+    button {
+      @apply text-base font-medium leading-normal;
+    }
+
+    input {
+      @apply text-base font-normal leading-normal;
+    }
   }
-
-  .glass {
-    @apply bg-white/60 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_10px_30px_-12px_rgba(0,0,0,0.3)];
-  }
-
-  .card-hover {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-glow;
-  }
-
-  .soft-shadow {
-    @apply shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_8px_40px_rgba(17,24,39,0.08)];
-  }
-
-  .radial-spotlight {
-    background: radial-gradient(1000px 600px at 50% -10%, rgba(139,92,246,0.15), rgba(139,92,246,0) 60%), radial-gradient(800px 400px at 80% 10%, rgba(236,72,153,0.12), rgba(236,72,153,0) 60%);
-  }
 }
 
-.markdown {
-  @apply leading-relaxed space-y-4;
-}
-
-.markdown h1 {
-  @apply text-2xl font-semibold text-foreground;
-}
-
-.markdown h2 {
-  @apply text-xl font-semibold text-foreground;
-}
-
-.markdown h3 {
-  @apply text-lg font-semibold text-foreground;
-}
-
-.markdown p {
-  @apply text-base text-foreground;
-}
-
-.markdown ul {
-  @apply list-disc pl-6 space-y-1;
-}
-
-.markdown ol {
-  @apply list-decimal pl-6 space-y-1;
-}
-
-.markdown code {
-  @apply px-2 py-1 bg-muted rounded text-sm font-mono;
-}
-
-.markdown pre {
-  @apply bg-gray-950 dark:bg-gray-900 text-gray-100 rounded-lg p-4 overflow-auto;
-}
-
-.markdown blockquote {
-  @apply border-l-4 border-primary/30 pl-4 italic text-muted-foreground;
+html {
+  font-size: var(--font-size);
 }
