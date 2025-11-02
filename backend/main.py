@@ -21,6 +21,7 @@ from threading import Lock
 from typing import Any, Callable, List, Optional
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -341,6 +342,39 @@ async def list_files() -> dict:
                     }
                 )
     return {"files": files, "count": len(files)}
+
+
+@app.get("/files/content/{path:path}")
+async def get_file_content(path: str):
+    """Serve raw file content for previews and downloads.
+
+    The provided path is interpreted relative to DATA_DIR. Path traversal is prevented
+    by resolving the absolute path and ensuring it remains within DATA_DIR.
+    """
+    ensure_app_dirs()
+    base = Path(DATA_DIR).resolve()
+    target = (base / path).resolve()
+
+    # Prevent path traversal
+    if not str(target).startswith(str(base)):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Basic content types for common formats
+    suffix = target.suffix.lower()
+    media_type = "application/octet-stream"
+    if suffix == ".pdf":
+        media_type = "application/pdf"
+    elif suffix == ".txt":
+        media_type = "text/plain; charset=utf-8"
+    elif suffix == ".md":
+        media_type = "text/markdown; charset=utf-8"
+    elif suffix == ".docx":
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    return FileResponse(path=str(target), media_type=media_type, filename=target.name)
 
 
 @app.get("/sessions")

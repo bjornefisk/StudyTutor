@@ -14,8 +14,8 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 're
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import clsx from 'clsx'
-import { Send } from 'lucide-react'
-import { postChat, fetchSessionHistory } from '@/lib/api'
+import { Send, Paperclip, Loader2 } from 'lucide-react'
+import { postChat, fetchSessionHistory, uploadDocuments, triggerIngestion } from '@/lib/api'
 
 import type { Message } from '@/types'
 
@@ -29,6 +29,9 @@ export default function ChatInterface({ chatId }: ChatInterfaceProps) {
   const [draft, setDraft] = useState('')
   const containerRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<string>('')
   
   const suggestions = [
     "Explain this concept in simple terms",
@@ -231,21 +234,72 @@ export default function ChatInterface({ chatId }: ChatInterfaceProps) {
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
             className="max-h-40 min-h-[64px] flex-1 resize-none rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--ring)] focus:outline-none focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-50"
-            disabled={isLoading}
+            disabled={isLoading || isUploading}
           />
-          <button
-            type="button"
-            onClick={() => void handleSend()}
-            disabled={isLoading || !draft.trim()}
-            className="flex h-12 w-full items-center justify-center rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-12"
-            aria-label="Send message"
-          >
-            <Send className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,.md"
+              multiple
+              className="hidden"
+              onChange={async (event) => {
+                const files = event.target.files
+                if (!files || files.length === 0) return
+                try {
+                  setIsUploading(true)
+                  setUploadStatus('Uploading…')
+                  const arr = Array.from(files)
+                  const result = await uploadDocuments(arr)
+                  const success = result.count ? `Uploaded ${result.count} file${result.count > 1 ? 's' : ''}. ` : ''
+                  const errs = result.errors?.length ? `Errors: ${result.errors.join('; ')}` : ''
+                  setUploadStatus(`${success}${errs}`.trim())
+                  // Kick off ingestion automatically after successful upload
+                  if (result.count) {
+                    const ingest = await triggerIngestion()
+                    setUploadStatus((prev) => `${prev} ${ingest.message}`.trim())
+                  }
+                } catch (e) {
+                  setUploadStatus('Upload failed. Please try again.')
+                } finally {
+                  setIsUploading(false)
+                  // Reset the input so selecting the same files again triggers change
+                  if (fileInputRef.current) fileInputRef.current.value = ''
+                }
+              }}
+            />
+
+            {/* Upload button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || isUploading}
+              className="flex h-12 w-12 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Upload documents"
+              title="Upload documents"
+            >
+              {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+            </button>
+
+            {/* Send button */}
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={isLoading || isUploading || !draft.trim()}
+              className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Send message"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        <p className="mt-2 text-center text-xs text-[var(--muted-foreground)]">
-          Press Enter to send · Shift + Enter for new line
-        </p>
+        <div className="mt-2 flex flex-col items-center gap-1 text-xs text-[var(--muted-foreground)]">
+          <p>Press Enter to send · Shift + Enter for new line</p>
+          {uploadStatus ? (
+            <p className="text-[var(--foreground)]/70">{uploadStatus}</p>
+          ) : null}
+        </div>
       </div>
     </div>
   )

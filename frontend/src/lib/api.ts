@@ -91,6 +91,12 @@ export async function listDocuments(): Promise<{ files: FileInfo[]; count: numbe
   return data
 }
 
+// Build a URL to access raw file content for previews/downloads.
+// Uses encodeURI to preserve path separators for nested files.
+export function getFileContentURL(name: string): string {
+  return `${API_URL}/files/content/${encodeURI(name)}`
+}
+
 export async function fetchSessions(): Promise<SessionDescriptor[]> {
   const { data } = await client.get<{ sessions: SessionDescriptor[] }>('/sessions')
   return data.sessions

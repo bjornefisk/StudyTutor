@@ -1,13 +1,13 @@
 'use client'
 
-import { MessageSquare, FileText, Brain, Plus, Clock } from 'lucide-react'
+import { MessageSquare, FileText, Brain, Plus, Clock, Files } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface SidebarProps {
-  activeView: 'chat' | 'notes' | 'flashcards'
-  setActiveView: (view: 'chat' | 'notes' | 'flashcards') => void
+  activeView: 'chat' | 'notes' | 'flashcards' | 'documents'
+  setActiveView: (view: 'chat' | 'notes' | 'flashcards' | 'documents') => void
   chatHistory: Array<{ id: string; title: string; timestamp: Date }>
-  activeChatId: string
+  activeChatId: string | null
   setActiveChatId: (id: string) => void
   onNewChat: () => void
 }
@@ -42,6 +42,19 @@ export function Sidebar({
         >
           <MessageSquare className="w-5 h-5" />
           <span>Chat</span>
+        </button>
+
+        <button
+          onClick={() => setActiveView('documents')}
+          className={cn(
+            'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+            activeView === 'documents'
+              ? 'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]'
+              : 'text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]'
+          )}
+        >
+          <Files className="w-5 h-5" />
+          <span>Documents</span>
         </button>
 
         <button
