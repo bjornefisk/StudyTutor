@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import uuid
+import hashlib
+import tempfile
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -40,6 +42,10 @@ OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 
 CHUNK_TOKENS = int(os.getenv("CHUNK_TOKENS", "800"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "80"))
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "256"))
+
+# Reuse a single tiktoken encoder instance for efficiency
+_ENC = tiktoken.get_encoding("cl100k_base")
 
 def ensure_dirs() -> None:
     """Create necessary directories if they don't exist."""
@@ -88,39 +94,77 @@ def read_docx(path: str) -> List[Tuple[int, str]]:
         return []
 
 def tokenize(text: str) -> List[int]:
-    """Convert text to tokens using tiktoken encoding."""
-    enc = tiktoken.get_encoding("cl100k_base")
-    return enc.encode(text)
+    """Convert text to tokens using a shared tiktoken encoder."""
+    return _ENC.encode(text)
 
 def detokenize(tokens: List[int]) -> str:
-    """Convert tokens back to text using tiktoken encoding."""
-    enc = tiktoken.get_encoding("cl100k_base")
-    return enc.decode(tokens)
+    """Convert tokens back to text using a shared tiktoken encoder."""
+    return _ENC.decode(tokens)
 
 def chunk_text(text: str, max_tokens: int = 350, overlap: int = 60) -> List[str]:
     """
-    Split text into overlapping chunks based on token count.
-    
-    Args:
-        text: The text to chunk
-        max_tokens: Maximum tokens per chunk
-        overlap: Number of tokens to overlap between chunks
-    Returns:
-        List of text chunks
+    Sentence-level chunking with a sliding token window to preserve semantic context.
+    - Split into sentences, pack sentences up to max_tokens, then slide forward while
+      keeping approximately `overlap` tokens from the end of the previous window.
     """
-    toks = tokenize(text)
-    chunks = []
-    start = 0
-    while start < len(toks):
-        end = min(start + max_tokens, len(toks))
-        chunk = detokenize(toks[start:end]).strip()
-        if chunk:
-            chunks.append(chunk)
-        if end == len(toks):
+    import re
+    if not text.strip():
+        return []
+
+    # Heuristic sentence split: split on punctuation followed by whitespace and a capital/quote
+    norm = re.sub(r"[ \t]+", " ", text.strip())
+    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])", norm)
+    if len(parts) == 1:
+        parts = [p for p in re.split(r"\n{2,}|\r\n{2,}", norm) if p.strip()]
+
+    # Pre-tokenize sentences
+    sent_tokens = [tokenize(s) for s in parts]
+    sent_lens = [len(t) for t in sent_tokens]
+
+    chunks: List[str] = []
+    n = len(parts)
+    start_idx = 0
+
+    while start_idx < n:
+        total = 0
+        end_idx = start_idx
+        # Greedily fit sentences into the token budget
+        while end_idx < n:
+            nxt_len = sent_lens[end_idx]
+            if total == 0 and nxt_len > max_tokens:
+                # Extremely long sentence: hard-split by tokens
+                toks = sent_tokens[end_idx]
+                for i in range(0, len(toks), max_tokens):
+                    sub = detokenize(toks[i:i+max_tokens]).strip()
+                    if sub:
+                        chunks.append(sub)
+                end_idx += 1
+                total = 0
+                break
+            if total + nxt_len > max_tokens:
+                break
+            total += nxt_len
+            end_idx += 1
+
+        if end_idx > start_idx:
+            chunk_text = " ".join(parts[start_idx:end_idx]).strip()
+            if chunk_text:
+                chunks.append(chunk_text)
+
+        if end_idx >= n:
             break
-        start = max(0, end - overlap)
-        if start >= len(toks):
-            break
+
+        # Slide window forward while keeping ~overlap tokens from the tail
+        overlap_acc = 0
+        j = end_idx - 1
+        while j >= start_idx and overlap_acc < overlap:
+            overlap_acc += sent_lens[j]
+            j -= 1
+        new_start = max(start_idx + 1, j + 1)
+        if new_start <= start_idx:
+            new_start = start_idx + 1
+        start_idx = new_start
+
     return chunks
 
 # -------------------- PubChem utilities --------------------
@@ -289,10 +333,100 @@ def normalize_rows(x: np.ndarray):
     norms = np.linalg.norm(x, axis=1, keepdims=True) + 1e-12
     return x / norms
 
+# -------------- Deduplication and atomic write helpers --------------
+
+def _hash_text(text: str) -> str:
+    """Stable content hash with whitespace normalization for deduplication."""
+    norm = " ".join(text.split())
+    return hashlib.sha256(norm.encode("utf-8")).hexdigest()
+
+
+def _load_existing_hashes() -> set:
+    """Load existing chunk content hashes from metadata.jsonl for cross-run dedup."""
+    hashes: set = set()
+    if not os.path.exists(META_PATH):
+        return hashes
+    try:
+        with open(META_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                t = obj.get("text")
+                if isinstance(t, str) and t.strip():
+                    hashes.add(_hash_text(t))
+    except (OSError, IOError):
+        logger.warning("Unable to read existing metadata for dedup; proceeding without it.")
+    return hashes
+
+
+def _atomic_write(path: str, data: bytes) -> None:
+    """Atomic write: write to temp file in same dir, then replace."""
+    directory = os.path.dirname(path) or "."
+    fd, tmp_path = tempfile.mkstemp(prefix=".tmp-", dir=directory)
+    try:
+        with os.fdopen(fd, "wb") as tmp:
+            tmp.write(data)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+        os.replace(tmp_path, path)
+    finally:
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except OSError:
+            pass
+
+
+def _atomic_append_jsonl(path: str, new_records: List[Dict]) -> None:
+    """Atomic append for JSONL: copy existing + new to temp, then replace."""
+    directory = os.path.dirname(path) or "."
+    os.makedirs(directory, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(prefix=".meta-", dir=directory)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as src:
+                    for line in src:
+                        tmp.write(line)
+            for rec in new_records:
+                tmp.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            tmp.flush()
+            os.fsync(tmp.fileno())
+        os.replace(tmp_path, path)
+    finally:
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except OSError:
+            pass
+
+
+def _atomic_write_index(index: faiss.Index, path: str) -> None:
+    """Write FAISS index via temp path then atomic replace to avoid corruption."""
+    directory = os.path.dirname(path) or "."
+    os.makedirs(directory, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(prefix=".index-", dir=directory)
+    os.close(fd)
+    try:
+        faiss.write_index(index, tmp_path)
+        try:
+            with open(tmp_path, "rb") as f:
+                os.fsync(f.fileno())
+        except Exception:
+            pass
+        os.replace(tmp_path, path)
+    finally:
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except OSError:
+            pass
+
 def append_metadata(records: List[Dict]):
-    with open(META_PATH, "a", encoding="utf-8") as f:
-        for r in records:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    """Atomically append metadata records to metadata.jsonl to prevent corruption."""
+    _atomic_append_jsonl(META_PATH, records)
 
 def count_metadata() -> int:
     if not os.path.exists(META_PATH):
@@ -301,18 +435,6 @@ def count_metadata() -> int:
         return sum(1 for _ in f)
 
 def ingest() -> None:
-    """
-    Main ingestion function that processes all documents and builds the search index.
-    
-    This function:
-    1. Discovers all supported files in the data/ directory
-    2. Extracts text from PDFs, DOCX, TXT, and MD files
-    3. Processes PubChem compound queries from pubchem.txt files
-    4. Chunks all text into manageable pieces
-    5. Generates embeddings for all chunks
-    6. Builds a FAISS vector index for semantic search
-    7. Saves metadata and configuration
-    """
     ensure_dirs()
     embed = get_embedder()
 
@@ -333,8 +455,12 @@ def ingest() -> None:
         if "pubchem.txt" in fnames:
             pubchem_queries.extend(_read_lines(os.path.join(root, "pubchem.txt")))
 
+    # Deduplication sets: pre-load existing content hashes and track this run's hashes
+    seen_hashes = _load_existing_hashes()
+    session_seen_hashes: set = set()
+
     all_chunks, metas = [], []
-    # Ingest PDFs
+    # Ingest PDFs/TXT/MD/DOCX
     for fp in files:
         lower = fp.lower()
         if lower.endswith(".pdf"):
@@ -349,10 +475,15 @@ def ingest() -> None:
         except (OSError, ValueError):
             title = os.path.basename(fp)
         for page_num, text in pages:
+            # Sentence-level chunking with sliding window
             chunks = chunk_text(text, CHUNK_TOKENS, CHUNK_OVERLAP)
             for i, ch in enumerate(chunks):
+                h = _hash_text(ch)
+                if h in seen_hashes or h in session_seen_hashes:
+                    continue  # skip duplicate content
+                session_seen_hashes.add(h)
                 metas.append({
-                    "id": str(uuid.uuid4()),
+                    "id": str(uuid.uuid4()),  # stable chunk UUID persisted in metadata
                     "source": title,
                     "page": page_num,
                     "chunk_index": i,
@@ -376,6 +507,10 @@ def ingest() -> None:
             continue
         chunks = chunk_text(text, CHUNK_TOKENS, CHUNK_OVERLAP)
         for i, ch in enumerate(chunks):
+            h = _hash_text(ch)
+            if h in seen_hashes or h in session_seen_hashes:
+                continue
+            session_seen_hashes.add(h)
             metas.append({
                 "id": str(uuid.uuid4()),
                 "source": f"PubChem {display_name}",
@@ -387,29 +522,38 @@ def ingest() -> None:
         pubchem_ingested += 1
 
     if not all_chunks:
-        logger.warning("No text extracted. Add PDFs to data/ or queries to data/pubchem.txt")
-        print("No text extracted. Add PDFs to data/ or queries to data/pubchem.txt")
+        logger.warning("No new unique text extracted. Add PDFs to data/ or queries to data/pubchem.txt")
+        print("No new unique text extracted. Add PDFs to data/ or queries to data/pubchem.txt")
         return
 
     logger.info("Embedding %d chunks", len(all_chunks))
-    vecs = embed(all_chunks)
-    vecs = normalize_rows(vecs)
-
-    dim = vecs.shape[1]
-    index = load_or_create_index(dim)
-
+    index = None
     start_id = count_metadata()
-    ids = np.arange(start_id, start_id + vecs.shape[0]).astype("int64")
+    total_added = 0
+    for i in range(0, len(all_chunks), BATCH_SIZE):
+        batch_texts = all_chunks[i:i + BATCH_SIZE]
+        batch_vecs = embed(batch_texts)            # shape: (batch, dim)
+        batch_vecs = normalize_rows(batch_vecs)    # cosine similarity expects normalized vectors
 
-    # Ensure IndexIDMap2 for adding ids
-    if not isinstance(index, faiss.IndexIDMap2):
-        index = faiss.IndexIDMap2(index)
+        if index is None:
+            dim = batch_vecs.shape[1]
+            index = load_or_create_index(dim)
+            # Ensure we have an ID-mapped index so we can control vector IDs
+            if not isinstance(index, faiss.IndexIDMap2):
+                index = faiss.IndexIDMap2(index)
+        else:
+            # Sanity check: all batches must produce same embedding dimensionality
+            if batch_vecs.shape[1] != index.d:
+                raise ValueError(f"Index dim {index.d} != embed dim {batch_vecs.shape[1]}")
 
-    index.add_with_ids(vecs, ids)
+        # Compute vector IDs for this batch based on metadata count and batch offset
+        ids = np.arange(start_id + i, start_id + i + batch_vecs.shape[0]).astype("int64")
+        index.add_with_ids(batch_vecs, ids)
+        total_added += batch_vecs.shape[0]
 
     append_metadata(metas)
-    faiss.write_index(index, INDEX_PATH)
-    logger.info("Saved index to %s with %d vectors", INDEX_PATH, vecs.shape[0])
+    _atomic_write_index(index, INDEX_PATH)
+    logger.info("Saved index to %s with %d vectors", INDEX_PATH, total_added)
     
     # Write/update index fingerprint config
     try:
@@ -431,8 +575,7 @@ def ingest() -> None:
             "index_path": INDEX_PATH,
             "pubchem_cache": PUBCHEM_CACHE_DIR,
         }
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, ensure_ascii=False, indent=2)
+        _atomic_write(CONFIG_PATH, json.dumps(cfg, ensure_ascii=False, indent=2).encode("utf-8"))
         logger.info("Wrote index fingerprint to %s", CONFIG_PATH)
     except (OSError, IOError, json.JSONEncodeError) as exc:
         logger.warning("Failed to write index config: %s", exc)
