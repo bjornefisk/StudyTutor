@@ -21,9 +21,9 @@ def _default_embed_backend() -> str:
 EMBED_BACKEND = _default_embed_backend()
 LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama").lower()
 
-OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_CHAT_MODEL = os.getenv("OPENROUTER_CHAT_MODEL", "openrouter/auto")
+OPENROUTER_CHAT_MODEL = os.getenv("OPENROUTER_CHAT_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
 OPENROUTER_EMBED_MODEL = os.getenv("OPENROUTER_EMBED_MODEL", "thenlper/gte-large")
 OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL")
 OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "CourseTutor-MVP")

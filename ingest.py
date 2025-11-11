@@ -44,7 +44,6 @@ CHUNK_TOKENS = int(os.getenv("CHUNK_TOKENS", "800"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "80"))
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "256"))
 
-# Reuse a single tiktoken encoder instance for efficiency
 _ENC = tiktoken.get_encoding("cl100k_base")
 
 def ensure_dirs() -> None:
@@ -111,13 +110,11 @@ def chunk_text(text: str, max_tokens: int = 350, overlap: int = 60) -> List[str]
     if not text.strip():
         return []
 
-    # Heuristic sentence split: split on punctuation followed by whitespace and a capital/quote
     norm = re.sub(r"[ \t]+", " ", text.strip())
     parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])", norm)
     if len(parts) == 1:
         parts = [p for p in re.split(r"\n{2,}|\r\n{2,}", norm) if p.strip()]
 
-    # Pre-tokenize sentences
     sent_tokens = [tokenize(s) for s in parts]
     sent_lens = [len(t) for t in sent_tokens]
 
@@ -128,11 +125,9 @@ def chunk_text(text: str, max_tokens: int = 350, overlap: int = 60) -> List[str]
     while start_idx < n:
         total = 0
         end_idx = start_idx
-        # Greedily fit sentences into the token budget
         while end_idx < n:
             nxt_len = sent_lens[end_idx]
             if total == 0 and nxt_len > max_tokens:
-                # Extremely long sentence: hard-split by tokens
                 toks = sent_tokens[end_idx]
                 for i in range(0, len(toks), max_tokens):
                     sub = detokenize(toks[i:i+max_tokens]).strip()
@@ -154,7 +149,6 @@ def chunk_text(text: str, max_tokens: int = 350, overlap: int = 60) -> List[str]
         if end_idx >= n:
             break
 
-        # Slide window forward while keeping ~overlap tokens from the tail
         overlap_acc = 0
         j = end_idx - 1
         while j >= start_idx and overlap_acc < overlap:
@@ -176,7 +170,6 @@ def _read_lines(path: str) -> List[str]:
 
 def _resolve_pubchem_cid(query: str) -> Optional[Tuple[int, str]]:
     """Resolve a user query (CID or name) to a PubChem CID. Returns (cid, display_name)."""
-    # Normalize and handle common CID formats like "CID 5793", "cid:2244"
     raw = query.strip()
     low = raw.lower()
     import re
@@ -187,7 +180,6 @@ def _resolve_pubchem_cid(query: str) -> Optional[Tuple[int, str]]:
             return cid, f"CID {cid}"
         except (ValueError, OverflowError):
             pass
-    # If it's an integer string already
     try:
         cid = int(raw)
         return cid, f"CID {cid}"
@@ -195,7 +187,6 @@ def _resolve_pubchem_cid(query: str) -> Optional[Tuple[int, str]]:
         pass
 
     import requests
-    # Try name -> CID
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{requests.utils.quote(query)}/cids/TXT"
     try:
         r = requests.get(url, timeout=30)
@@ -212,7 +203,6 @@ def _extract_text_from_pug_view(record: Dict) -> str:
     lines: List[str] = []
 
     def add_info_value(val: Dict):
-        # Value may contain StringWithMarkup -> list of {String, Markup}
         if not isinstance(val, dict):
             return
         if "StringWithMarkup" in val and isinstance(val["StringWithMarkup"], list):
@@ -247,7 +237,6 @@ def _extract_text_from_pug_view(record: Dict) -> str:
     return "\n\n".join([ln for ln in lines if ln and isinstance(ln, str)])
 
 def _fetch_pubchem_text(cid: int) -> Optional[str]:
-    # Check cache first
     cache_path = os.path.join(PUBCHEM_CACHE_DIR, f"{cid}.txt")
     try:
         if os.path.exists(cache_path):
@@ -326,14 +315,13 @@ def load_or_create_index(dim: int):
         if index.d != dim:
             raise ValueError(f"Index dim {index.d} != embed dim {dim}")
         return index
-    base = faiss.IndexFlatIP(dim)  # cosine with normalized vectors
+    base = faiss.IndexFlatIP(dim)
     return faiss.IndexIDMap2(base)
 
 def normalize_rows(x: np.ndarray):
     norms = np.linalg.norm(x, axis=1, keepdims=True) + 1e-12
     return x / norms
 
-# -------------- Deduplication and atomic write helpers --------------
 
 def _hash_text(text: str) -> str:
     """Stable content hash with whitespace normalization for deduplication."""
@@ -438,24 +426,20 @@ def ingest() -> None:
     ensure_dirs()
     embed = get_embedder()
 
-    # Recursively discover files under data/
     files: List[str] = []
     for root, _dirs, fnames in os.walk(DATA_DIR):
         for fn in fnames:
             lower = fn.lower()
-            # Do not ingest pubchem.txt itself as a document
             if lower == "pubchem.txt":
                 continue
             if lower.endswith((".pdf", ".txt", ".md", ".docx")):
                 files.append(os.path.join(root, fn))
 
-    # Collect all pubchem.txt files under data/ (root and subfolders)
     pubchem_queries: List[str] = []
     for root, _dirs, fnames in os.walk(DATA_DIR):
         if "pubchem.txt" in fnames:
             pubchem_queries.extend(_read_lines(os.path.join(root, "pubchem.txt")))
 
-    # Deduplication sets: pre-load existing content hashes and track this run's hashes
     seen_hashes = _load_existing_hashes()
     session_seen_hashes: set = set()
 
@@ -469,21 +453,19 @@ def ingest() -> None:
             pages = read_docx(fp)
         else:
             pages = read_text_file(fp)
-        # Use path relative to data/ for clearer source labels
         try:
             title = os.path.relpath(fp, DATA_DIR)
         except (OSError, ValueError):
             title = os.path.basename(fp)
         for page_num, text in pages:
-            # Sentence-level chunking with sliding window
             chunks = chunk_text(text, CHUNK_TOKENS, CHUNK_OVERLAP)
             for i, ch in enumerate(chunks):
                 h = _hash_text(ch)
                 if h in seen_hashes or h in session_seen_hashes:
-                    continue  # skip duplicate content
+                    continue
                 session_seen_hashes.add(h)
                 metas.append({
-                    "id": str(uuid.uuid4()),  # stable chunk UUID persisted in metadata
+                    "id": str(uuid.uuid4()),
                     "source": title,
                     "page": page_num,
                     "chunk_index": i,
@@ -491,7 +473,6 @@ def ingest() -> None:
                 })
                 all_chunks.append(ch)
 
-    # Ingest PubChem compounds
     pubchem_ingested = 0
     pubchem_resolve_fail = 0
     pubchem_fetch_fail = 0
@@ -532,21 +513,18 @@ def ingest() -> None:
     total_added = 0
     for i in range(0, len(all_chunks), BATCH_SIZE):
         batch_texts = all_chunks[i:i + BATCH_SIZE]
-        batch_vecs = embed(batch_texts)            # shape: (batch, dim)
-        batch_vecs = normalize_rows(batch_vecs)    # cosine similarity expects normalized vectors
+        batch_vecs = embed(batch_texts)
+        batch_vecs = normalize_rows(batch_vecs)
 
         if index is None:
             dim = batch_vecs.shape[1]
             index = load_or_create_index(dim)
-            # Ensure we have an ID-mapped index so we can control vector IDs
             if not isinstance(index, faiss.IndexIDMap2):
                 index = faiss.IndexIDMap2(index)
         else:
-            # Sanity check: all batches must produce same embedding dimensionality
             if batch_vecs.shape[1] != index.d:
                 raise ValueError(f"Index dim {index.d} != embed dim {batch_vecs.shape[1]}")
 
-        # Compute vector IDs for this batch based on metadata count and batch offset
         ids = np.arange(start_id + i, start_id + i + batch_vecs.shape[0]).astype("int64")
         index.add_with_ids(batch_vecs, ids)
         total_added += batch_vecs.shape[0]
@@ -555,9 +533,7 @@ def ingest() -> None:
     _atomic_write_index(index, INDEX_PATH)
     logger.info("Saved index to %s with %d vectors", INDEX_PATH, total_added)
     
-    # Write/update index fingerprint config
     try:
-        # Determine model name based on backend
         if EMBED_BACKEND == "openrouter":
             model_name = OPENROUTER_EMBED_MODEL
         elif EMBED_BACKEND == "sbert":

@@ -251,18 +251,43 @@ async def chat(request: ChatRequest) -> ChatResponse:
     if _EMBED_FN is None:
         raise HTTPException(status_code=503, detail="Embedding function not initialized.")
 
-    hits = retrieve(
-        prompt, 
-        _INDEX, 
-        _METAS, 
-        _EMBED_FN, 
-        k=k, 
-        use_multi_query=use_mq,
-        num_query_variations=NUM_QUERY_VARIATIONS
-    )
+    from tutor.core.advanced_prompting import expand_query_with_planning
+    from tutor.core.llm import llm_call
+    
+    try:
+        expanded_queries = expand_query_with_planning(
+            prompt,
+            llm_call_fn=lambda p: llm_call(p, max_tokens=150)
+        )
+        logging.info(f"Query planning: expanded into {len(expanded_queries)} queries")
+    except Exception as exc:
+        logging.warning(f"Query planning failed: {exc}, using original query")
+        expanded_queries = [prompt]
+    
+    all_hits = []
+    for query in expanded_queries:
+        hits = retrieve(
+            query, 
+            _INDEX, 
+            _METAS, 
+            _EMBED_FN, 
+            k=k, 
+            use_multi_query=use_mq,
+            num_query_variations=NUM_QUERY_VARIATIONS
+        )
+        all_hits.extend(hits)
+    
+    from tutor.core.multi_query import deduplicate_results
+    hits = deduplicate_results(all_hits, top_k=k)
+    
     context_chunks = [meta for _, meta in hits]
-    prompt_payload = build_prompt(context_chunks, prompt)
-    answer = llm_answer(prompt_payload)
+    
+    answer = llm_answer(
+        prompt, 
+        max_tokens=512, 
+        use_advanced=True, 
+        context_chunks=context_chunks
+    )
 
     timestamp = datetime.utcnow().isoformat() + "Z"
     append_chat_message(session_id, "assistant", answer)
@@ -317,7 +342,7 @@ async def ingest_endpoint(background_tasks: BackgroundTasks) -> dict:
     def _ingest_job() -> None:
         try:
             run_ingest()
-        except Exception as exc:  # Background task - log but don't crash
+        except Exception as exc:
             logging.exception("Ingestion failed: %s", exc)
             return
         refresh_resources(force_reload=True)
@@ -355,14 +380,12 @@ async def get_file_content(path: str):
     base = Path(DATA_DIR).resolve()
     target = (base / path).resolve()
 
-    # Prevent path traversal
     if not str(target).startswith(str(base)):
         raise HTTPException(status_code=400, detail="Invalid file path")
 
     if not target.exists() or not target.is_file():
         raise HTTPException(status_code=404, detail="File not found")
 
-    # Basic content types for common formats
     suffix = target.suffix.lower()
     media_type = "application/octet-stream"
     if suffix == ".pdf":
@@ -437,16 +460,11 @@ async def suggestions(request: SuggestionRequest) -> dict:
         return {"suggestions": []}
 
 
-# ============================================================================
-# Flashcard Endpoints
-# ============================================================================
-
 @app.post("/flashcards/generate")
 async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
     """Generate flashcards from specified documents using AI."""
     _assert_index_ready()
     
-    # Collect text from specified documents
     document_texts = {}
     for meta in _METAS:
         source_name = meta.get("source", "")
@@ -461,7 +479,6 @@ async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
             detail=f"No matching documents found for: {request.document_names}"
         )
     
-    # Check if documents have sufficient content
     total_text_length = sum(len("\n\n".join(chunks)) for chunks in document_texts.values())
     if total_text_length < 100:
         raise HTTPException(
@@ -469,21 +486,19 @@ async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
             detail="Selected documents don't have enough content to generate flashcards. Please select documents with more text."
         )
     
-    # Generate flashcards from combined document text (NO LENGTH LIMIT - send full documents)
     all_flashcards = []
     errors = []
     
     for doc_name, text_chunks in document_texts.items():
-        # Combine ALL chunks - no truncation for deep understanding
         combined_text = "\n\n".join(text_chunks)
         
         logging.info(f"Generating conceptual flashcards from {doc_name} ({len(combined_text)} characters, {len(text_chunks)} chunks)")
         
         try:
             cards = generate_flashcards_from_text(
-                combined_text,  # Full document text for true comprehension
+                combined_text,
                 doc_name,
-                num_cards=max(1, request.num_cards // len(document_texts)),  # Distribute evenly, min 1
+                num_cards=max(1, request.num_cards // len(document_texts)),
                 difficulty=request.difficulty
             )
             all_flashcards.extend(cards)
@@ -495,7 +510,6 @@ async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
             errors.append(f"{doc_name}: Unexpected error - {str(e)}")
             logging.exception(f"Unexpected error generating flashcards from {doc_name}")
     
-    # If no flashcards were generated at all, raise an error
     if not all_flashcards:
         error_detail = "Failed to generate any flashcards. " + (
             "Errors: " + "; ".join(errors) if errors else 
@@ -503,7 +517,6 @@ async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
         )
         raise HTTPException(status_code=500, detail=error_detail)
     
-    # Save the deck
     deck_id = save_flashcard_deck(
         deck_name=request.deck_name,
         flashcards=all_flashcards
@@ -516,7 +529,6 @@ async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
         "status": "success"
     }
     
-    # Include warnings if some documents failed
     if errors:
         response["warnings"] = errors
     

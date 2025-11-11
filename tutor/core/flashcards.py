@@ -46,17 +46,14 @@ Return ONLY a JSON array of concept descriptions (no markdown, no explanations):
 }}"""
     
     try:
-        # Use more tokens for concept extraction
         response = llm_answer(prompt, max_tokens=1000)
         response = response.strip()
         
-        # Clean markdown
         if response.startswith("```"):
             lines = response.split("\n")
             response = "\n".join(lines[1:-1]) if len(lines) > 2 else response
             response = response.replace("```json", "").replace("```", "").strip()
         
-        # Try to find JSON
         if not response.startswith("{"):
             json_start = response.find("{")
             if json_start > 0:
@@ -97,16 +94,13 @@ def generate_flashcards_from_text(
     
     config = difficulty_config.get(difficulty, difficulty_config["medium"])
     
-    # PASS 1: Extract key concepts (use first 20,000 chars for concept extraction)
     logger.info(f"Analyzing document ({len(text)} characters) for key concepts...")
     concepts = _extract_key_concepts(text[:20000], num_concepts=max(5, num_cards // 2))
     
-    # Build concept context for better prompting
     concept_context = ""
     if concepts:
         concept_context = "\n\nKey concepts identified in the material:\n" + "\n".join(f"- {c}" for c in concepts)
     
-    # PASS 2: Generate conceptual flashcards
     prompt = f"""You are an expert educator creating CONCEPTUAL study flashcards that test TRUE UNDERSTANDING, not memorization.
 
 Your goal: Create {num_cards} flashcards that test {config['description']}.
@@ -146,8 +140,6 @@ Return EXACTLY {num_cards} flashcards in this JSON format (respond with ONLY val
 }}"""
 
     try:
-        # Request more tokens for flashcard generation (JSON can be lengthy)
-        # Estimate: ~200 tokens per flashcard, so num_cards * 200 + buffer
         max_tokens = min(4000, num_cards * 250 + 500)
         response = llm_answer(prompt, max_tokens=max_tokens)
         
@@ -155,16 +147,14 @@ Return EXACTLY {num_cards} flashcards in this JSON format (respond with ONLY val
             logger.error(f"LLM returned empty or very short response: '{response}'")
             raise ValueError("LLM returned empty response. Check if your LLM backend (Ollama/OpenRouter) is running.")
         
-        # Try to extract JSON from response (handle markdown code blocks)
         response = response.strip()
-        original_response = response  # Keep for debugging
+        original_response = response
         
         if response.startswith("```"):
             lines = response.split("\n")
             response = "\n".join(lines[1:-1]) if len(lines) > 2 else response
             response = response.replace("```json", "").replace("```", "").strip()
         
-        # Try to find JSON in the response if not at the start
         if not response.startswith("{"):
             json_start = response.find("{")
             if json_start > 0:
@@ -177,7 +167,6 @@ Return EXACTLY {num_cards} flashcards in this JSON format (respond with ONLY val
             logger.error(f"LLM response had no flashcards. Response: {original_response[:500]}")
             raise ValueError("LLM did not generate any flashcards. Try with different documents or check LLM configuration.")
         
-        # Process and validate flashcards
         flashcards = []
         for idx, card in enumerate(flashcards_raw):
             if "front" in card and "back" in card:

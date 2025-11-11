@@ -31,8 +31,6 @@ def generate_multi_queries(
             queries.extend(_generate_with_heuristics(original_query, num_queries - 1))
     else:
         queries.extend(_generate_with_heuristics(original_query, num_queries - 1))
-    
-    # Deduplicate while preserving order
     seen = set()
     unique_queries = []
     for q in queries:
@@ -64,11 +62,10 @@ Generate ONLY the alternative questions, one per line. Do not number them or add
     queries = []
     for line in response.split('\n'):
         line = line.strip()
-        # Remove numbering if present (1., 2., etc.)
         import re
         line = re.sub(r'^\d+[\.\)]\s*', '', line)
         line = re.sub(r'^[-•*]\s*', '', line)
-        if line and len(line) > 10:  # Basic quality filter
+        if line and len(line) > 10:
             queries.append(line)
     
     return queries[:num_variations]
@@ -204,7 +201,6 @@ def deduplicate_results(
     for score, meta in all_results:
         chunk_id = meta.get('id', '')
         if not chunk_id:
-            # Fallback: use source + page + chunk_index as ID
             chunk_id = f"{meta.get('source', '')}_{meta.get('page', 0)}_{meta.get('chunk_index', 0)}"
         
         if chunk_id not in results_by_id:
@@ -213,18 +209,14 @@ def deduplicate_results(
         
         results_by_id[chunk_id].append(score)
     
-    # Calculate final scores using max score + occurrence bonus
     final_results = []
     for chunk_id, scores in results_by_id.items():
-        # Use max score as base
         max_score = max(scores)
-        # Add small bonus for appearing in multiple query results (indicates robustness)
         occurrence_bonus = min(0.1, len(scores) * 0.02)
         final_score = max_score + occurrence_bonus
         
         final_results.append((final_score, metadata_by_id[chunk_id]))
     
-    # Sort by final score (descending) and return top_k
     final_results.sort(key=lambda x: x[0], reverse=True)
     return final_results[:top_k]
 

@@ -14,7 +14,7 @@ Document-based Q&A system. Index your PDFs and notes to answer questions with RA
 ### Prerequisites
 - Python 3.9+
 - Node.js 18+
-- Optional: [Ollama](https://ollama.ai/) (local models) or an OpenRouter API key
+- **OpenRouter API key** (recommended for Llama 3.3 70B) or [Ollama](https://ollama.ai/) for local models
 
 ### 1) Backend
 ```bash
@@ -23,8 +23,14 @@ python3 -m venv .venv
 source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install -r backend/requirements.txt
 
-# Environment (minimal)
-cp .env-EXAMPLE .env  # edit if needed (LLM/embeddings backend)
+# Configure LLM (choose one)
+# Option A: OpenRouter (recommended - uses Llama 3.3 70B free tier)
+export OPENROUTER_API_KEY="your-key-here"
+export LLM_BACKEND="openrouter"
+
+# Option B: Local Ollama
+export LLM_BACKEND="ollama"
+export OLLAMA_MODEL="llama3"
 
 # Add study materials and build index
 mkdir -p data
@@ -46,4 +52,4 @@ npm install
 npm run dev  # default: http://localhost:3000
 ```
 
-Open the app in your browser and start learning.
+Open the app in your browser and start learning with AI-enhanced tutoring!

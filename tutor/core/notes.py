@@ -62,7 +62,6 @@ def update_note(
     if not note:
         return None
     
-    # Update fields
     if title is not None:
         note["title"] = title
     if content is not None:
@@ -75,7 +74,6 @@ def update_note(
     
     note["updated_at"] = datetime.utcnow().isoformat() + "Z"
     
-    # Save
     note_path = Path(NOTES_DIR) / f"{note_id}.json"
     with open(note_path, "w", encoding="utf-8") as f:
         json.dump(note, f, indent=2, ensure_ascii=False)
@@ -122,11 +120,9 @@ def list_notes(
             with open(note_path, "r", encoding="utf-8") as f:
                 note = json.load(f)
                 
-                # Filter by tags
                 if tags and not any(tag in note.get("tags", []) for tag in tags):
                     continue
                 
-                # Filter by search
                 if search:
                     search_lower = search.lower()
                     if (search_lower not in note.get("title", "").lower() and
@@ -138,7 +134,6 @@ def list_notes(
             logger.warning(f"Failed to load note {note_path}: {e}")
             continue
     
-    # Sort by updated_at descending
     notes.sort(key=lambda n: n.get("updated_at", ""), reverse=True)
     return notes
 
@@ -186,17 +181,15 @@ def add_source_to_note(
     if not note:
         return None
     
-    # Create citation
     citation = {
         "source": source,
         "page": page,
         "chunk_index": chunk_index,
-        "text": text[:200],  # Limit to 200 chars
+        "text": text[:200],
         "score": score,
         "added_at": datetime.utcnow().isoformat() + "Z"
     }
     
-    # Add if not duplicate
     linked_sources = note.get("linked_sources", [])
     if not any(
         s["source"] == source and s["chunk_index"] == chunk_index
@@ -206,7 +199,6 @@ def add_source_to_note(
         note["linked_sources"] = linked_sources
         note["updated_at"] = datetime.utcnow().isoformat() + "Z"
         
-        # Save
         note_path = Path(NOTES_DIR) / f"{note_id}.json"
         with open(note_path, "w", encoding="utf-8") as f:
             json.dump(note, f, indent=2, ensure_ascii=False)
@@ -227,7 +219,6 @@ def export_note_with_citations(note_id: str) -> Optional[str]:
     if not note:
         return None
     
-    # Build markdown
     lines = []
     lines.append(f"# {note['title']}")
     lines.append("")
@@ -241,11 +232,9 @@ def export_note_with_citations(note_id: str) -> Optional[str]:
     lines.append("---")
     lines.append("")
     
-    # Content
     lines.append(note["content"])
     lines.append("")
     
-    # Citations
     if note.get("linked_sources"):
         lines.append("---")
         lines.append("")

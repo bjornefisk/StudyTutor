@@ -35,16 +35,13 @@ def retrieve(
         logger.warning("Empty query provided to retrieve()")
         return []
     
-    # Multi-query retrieval
     if use_multi_query:
         try:
             from .multi_query import generate_multi_queries, deduplicate_results
             
-            # Generate query variations
             queries = generate_multi_queries(query, num_queries=num_query_variations, use_llm=True)
             logger.info("Generated %d query variations for multi-query retrieval", len(queries))
             
-            # Retrieve results for each query variation
             all_results: List[tuple[float, Dict]] = []
             for q in queries:
                 try:
@@ -60,7 +57,6 @@ def retrieve(
                     logger.warning("Query variation '%s' failed: %s", q[:50], exc)
                     continue
             
-            # Deduplicate and re-rank
             if all_results:
                 results = deduplicate_results(all_results, top_k=k)
                 logger.info("Multi-query retrieval: %d total results -> %d after deduplication", 
@@ -68,12 +64,9 @@ def retrieve(
                 return results
             else:
                 logger.warning("Multi-query retrieval returned no results, falling back to single query")
-                # Fall through to single query
         except Exception as exc:
             logger.error("Multi-query retrieval failed: %s, falling back to single query", exc)
-            # Fall through to single query
     
-    # Standard single-query retrieval
     try:
         qv = embed_fn([query])
         sims, ids = index.search(np.asarray(qv, dtype="float32"), k)
