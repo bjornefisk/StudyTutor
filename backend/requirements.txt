@@ -7,7 +7,6 @@ python-multipart==0.0.9
 # RAG dependencies
 faiss-cpu==1.12.0
 sentence-transformers==3.2.1
-# faiss-cpu currently pins numpy<2.0; lock to the latest wheel that supports Python 3.12+
 numpy==1.26.4
 openai==1.50.2
 requests==2.32.3
