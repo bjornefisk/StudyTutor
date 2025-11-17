@@ -25,7 +25,14 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from tutor.core.config import DATA_DIR, TOP_K, USE_MULTI_QUERY, NUM_QUERY_VARIATIONS
+from tutor.core.config import (
+    DATA_DIR,
+    TOP_K,
+    USE_MULTI_QUERY,
+    NUM_QUERY_VARIATIONS,
+    USE_HYBRID_RETRIEVAL,
+    RRF_K,
+)
 from tutor.core.embeddings import get_embedder
 from tutor.core.indexing import load_index_and_meta
 from tutor.core.llm import llm_answer
@@ -84,14 +91,16 @@ app.add_middleware(
 _RESOURCE_LOCK = Lock()
 _INDEX = None
 _METAS: List[dict] = []
+_BM25 = None
+_BM25_CORPUS = None
 _EMBED_FN: Optional[Callable[[List[str]], Any]] = None
 
 
 def refresh_resources(force_reload: bool = False) -> None:
-    """Load or reload the FAISS index, metadata, and embedder."""
-    global _INDEX, _METAS, _EMBED_FN
+    """Load or reload FAISS, BM25 resources, and the embedder."""
+    global _INDEX, _METAS, _BM25, _BM25_CORPUS, _EMBED_FN
     with _RESOURCE_LOCK:
-        _INDEX, _METAS = load_index_and_meta(force_reload=force_reload)
+        _INDEX, _METAS, _BM25, _BM25_CORPUS = load_index_and_meta(force_reload=force_reload)
         _EMBED_FN = get_embedder()
 
 
@@ -209,7 +218,10 @@ def _assert_index_ready() -> None:
     if _INDEX is None or not _METAS or _EMBED_FN is None:
         raise HTTPException(
             status_code=503,
-            detail="Vector index not loaded. Upload documents and run ingestion first.",
+            detail=(
+                "Vector index not loaded. Upload documents and run ingestion first. "
+                "(Hybrid BM25 index is optional and will be used automatically when available.)"
+            ),
         )
 
 
@@ -273,7 +285,11 @@ async def chat(request: ChatRequest) -> ChatResponse:
             _EMBED_FN, 
             k=k, 
             use_multi_query=use_mq,
-            num_query_variations=NUM_QUERY_VARIATIONS
+            num_query_variations=NUM_QUERY_VARIATIONS,
+            bm25=_BM25,
+            bm25_corpus=_BM25_CORPUS,
+            use_hybrid=USE_HYBRID_RETRIEVAL,
+            rrf_k=RRF_K,
         )
         all_hits.extend(hits)
     
@@ -695,7 +711,11 @@ async def get_note_suggestions(request: NoteSuggestionRequest) -> dict:
             _METAS,
             _EMBED_FN,
             k=request.top_k,
-            use_multi_query=False  # Fast retrieval for live suggestions
+            use_multi_query=False,  # Fast retrieval for live suggestions
+            bm25=_BM25,
+            bm25_corpus=_BM25_CORPUS,
+            use_hybrid=USE_HYBRID_RETRIEVAL,
+            rrf_k=RRF_K,
         )
         
         suggestions = []

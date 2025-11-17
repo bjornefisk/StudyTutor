@@ -37,3 +37,7 @@ TOP_K = int(os.getenv("TOP_K", "3"))
 # Multi-query retrieval settings
 USE_MULTI_QUERY = os.getenv("USE_MULTI_QUERY", "true").lower() in ("true", "1", "yes")
 NUM_QUERY_VARIATIONS = int(os.getenv("NUM_QUERY_VARIATIONS", "3"))
+
+# Hybrid retrieval settings
+USE_HYBRID_RETRIEVAL = os.getenv("USE_HYBRID_RETRIEVAL", "true").lower() in ("true", "1", "yes")
+RRF_K = int(os.getenv("RRF_K", "60"))
