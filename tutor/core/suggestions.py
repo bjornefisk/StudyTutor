@@ -1,14 +1,13 @@
 """Suggestion utilities for building contextual question suggestions."""
 from __future__ import annotations
 from typing import Dict, List
+from collections import Counter
+import os
+import re
 
 
 def build_suggestions(metas: List[Dict], prefix: str = "", limit: int = 3) -> list[str]:
     try:
-        from collections import Counter
-        import os
-        import re
-
         file_counter: Counter[str] = Counter()
         for meta in metas[:500]:
             source = str(meta.get("source", "")).strip()

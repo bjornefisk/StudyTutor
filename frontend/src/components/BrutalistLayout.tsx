@@ -60,14 +60,11 @@ export default function BrutalistLayout() {
                 isLoading={false}
                 onSend={async (message) => {
                   // Handle message sending
-                  console.log('Send message:', message)
                 }}
                 suggestions={[]}
                 onSuggestionSelect={(suggestion) => {
-                  console.log('Selected:', suggestion)
                 }}
                 onSuggestionSearch={(query) => {
-                  console.log('Search:', query)
                 }}
               />
             </div>

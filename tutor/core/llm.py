@@ -3,6 +3,12 @@ from __future__ import annotations
 import logging
 import os
 from typing import Dict, List
+import requests
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
 from .config import (
     LLM_BACKEND,
     OPENROUTER_BASE_URL,
@@ -20,8 +26,6 @@ DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 
 def _call_ollama(prompt: str, max_tokens: int = 512, system_prompt: str = "") -> str:
     """Call local Ollama chat API."""
-    import requests
-
     try:
         messages = []
         if system_prompt:
@@ -52,7 +56,9 @@ def _call_openrouter(prompt: str, max_tokens: int = 512, system_prompt: str = ""
         logger.warning("OPENROUTER_API_KEY not set; falling back to Ollama")
         return _call_ollama(prompt, max_tokens, system_prompt)
 
-    from openai import OpenAI
+    if OpenAI is None:
+        logger.error("OpenAI client not installed. Please install 'openai' package.")
+        return _call_ollama(prompt, max_tokens, system_prompt)
 
     client = OpenAI(base_url=OPENROUTER_BASE_URL, api_key=OPENROUTER_API_KEY)
     

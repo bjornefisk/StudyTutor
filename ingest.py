@@ -4,9 +4,11 @@ import os
 import uuid
 import hashlib
 import tempfile
+import re
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+import requests
 import faiss
 import numpy as np
 import tiktoken
@@ -106,7 +108,6 @@ def chunk_text(text: str, max_tokens: int = 350, overlap: int = 60) -> List[str]
     - Split into sentences, pack sentences up to max_tokens, then slide forward while
       keeping approximately `overlap` tokens from the end of the previous window.
     """
-    import re
     if not text.strip():
         return []
 
@@ -172,7 +173,6 @@ def _resolve_pubchem_cid(query: str) -> Optional[Tuple[int, str]]:
     """Resolve a user query (CID or name) to a PubChem CID. Returns (cid, display_name)."""
     raw = query.strip()
     low = raw.lower()
-    import re
     m = re.match(r"^cid\s*:?\s*(\d+)$", low)
     if m:
         try:
@@ -186,7 +186,6 @@ def _resolve_pubchem_cid(query: str) -> Optional[Tuple[int, str]]:
     except (ValueError, OverflowError):
         pass
 
-    import requests
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{requests.utils.quote(query)}/cids/TXT"
     try:
         r = requests.get(url, timeout=30)
@@ -247,7 +246,6 @@ def _fetch_pubchem_text(cid: int) -> Optional[str]:
     except (KeyError, TypeError, AttributeError):
         pass
 
-    import requests
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/{cid}/JSON"
     try:
         r = requests.get(url, timeout=30)
@@ -284,7 +282,6 @@ def get_embedder():
         return embed
 
     if backend == "ollama":
-        import requests
         model = OLLAMA_EMBED_MODEL
         def embed(texts: List[str]) -> np.ndarray:
             out = []
@@ -504,7 +501,6 @@ def ingest() -> None:
 
     if not all_chunks:
         logger.warning("No new unique text extracted. Add PDFs to data/ or queries to data/pubchem.txt")
-        print("No new unique text extracted. Add PDFs to data/ or queries to data/pubchem.txt")
         return
 
     logger.info("Embedding %d chunks", len(all_chunks))
@@ -557,11 +553,8 @@ def ingest() -> None:
         logger.warning("Failed to write index config: %s", exc)
     
     logger.info("Ingested %d chunks from %d documents and %d PubChem entries", len(all_chunks), len(files), pubchem_ingested)
-    print(f"Ingested {len(all_chunks)} chunks from {len(files)} documents and {pubchem_ingested} PubChem entries into {INDEX_PATH}")
-    print(f"Metadata: {META_PATH}")
     if pubchem_resolve_fail or pubchem_fetch_fail:
         logger.warning("PubChem warnings: resolve_failed=%d, fetch_failed=%d", pubchem_resolve_fail, pubchem_fetch_fail)
-        print(f"PubChem warnings: resolve_failed={pubchem_resolve_fail}, fetch_failed={pubchem_fetch_fail}")
 
 if __name__ == "__main__":
     ingest()
