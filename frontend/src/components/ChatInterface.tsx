@@ -36,7 +36,7 @@ export default function ChatInterface({ chatId }: ChatInterfaceProps) {
   const suggestions = [
     "Explain this concept in simple terms",
     "Create a summary of my notes",
-    "Generate flashcards from this material"
+    "Summarize the latest document in a few bullet points"
   ]
 
   // Load chat history when chatId changes
@@ -137,7 +137,7 @@ export default function ChatInterface({ chatId }: ChatInterfaceProps) {
                 Start a Conversation
               </h2>
               <p className="max-w-md mb-8 text-sm text-[var(--muted-foreground)]">
-                Ask questions about your study materials or request help with your notes and flashcards.
+                Ask questions about your study materials or request help refining your notes.
               </p>
               
               {/* Centered Floating Suggestions */}

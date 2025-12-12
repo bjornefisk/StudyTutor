@@ -44,15 +44,6 @@ from tutor.core.storage import (
     load_chat,
 )
 from tutor.core.suggestions import build_suggestions
-from tutor.core.flashcards import (
-    generate_flashcards_from_text,
-    save_flashcard_deck,
-    load_flashcard_deck,
-    list_flashcard_decks,
-    update_flashcard_review,
-    delete_flashcard_deck,
-    export_to_anki,
-)
 from tutor.core.notes import (
     create_note,
     update_note,
@@ -142,49 +133,6 @@ class SessionCreate(BaseModel):
 class SuggestionRequest(BaseModel):
     prefix: str = ""
     limit: int = Field(default=6, ge=1, le=25)
-
-
-class FlashcardGenerateRequest(BaseModel):
-    document_names: List[str] = Field(..., description="List of document names to generate flashcards from")
-    num_cards: int = Field(default=10, ge=1, le=50, description="Number of flashcards to generate")
-    difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
-    deck_name: str = Field(..., min_length=1, description="Name for the flashcard deck")
-
-
-class FlashcardDeck(BaseModel):
-    id: str
-    name: str
-    card_count: int
-    created_at: str
-    updated_at: str
-
-
-class Flashcard(BaseModel):
-    id: str
-    front: str
-    back: str
-    tags: List[str]
-    source_document: str
-    created_at: str
-    difficulty: str
-    review_count: int
-    correct_count: int
-    last_reviewed: Optional[str]
-    next_review: Optional[str]
-
-
-class FlashcardDeckDetail(BaseModel):
-    id: str
-    name: str
-    created_at: str
-    updated_at: str
-    card_count: int
-    flashcards: List[Flashcard]
-
-
-class FlashcardReviewRequest(BaseModel):
-    card_id: str
-    correct: bool
 
 
 class NoteCreate(BaseModel):
@@ -474,139 +422,6 @@ async def suggestions(request: SuggestionRequest) -> dict:
     except Exception as exc:  # Suggestion generation is optional - don't fail the request
         logging.debug("Suggestion generation failed: %s", exc)
         return {"suggestions": []}
-
-
-@app.post("/flashcards/generate")
-async def generate_flashcards(request: FlashcardGenerateRequest) -> dict:
-    """Generate flashcards from specified documents using AI."""
-    _assert_index_ready()
-    
-    document_texts = {}
-    for meta in _METAS:
-        source_name = meta.get("source", "")
-        if source_name in request.document_names:
-            if source_name not in document_texts:
-                document_texts[source_name] = []
-            document_texts[source_name].append(meta.get("text", ""))
-    
-    if not document_texts:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No matching documents found for: {request.document_names}"
-        )
-    
-    total_text_length = sum(len("\n\n".join(chunks)) for chunks in document_texts.values())
-    if total_text_length < 100:
-        raise HTTPException(
-            status_code=400,
-            detail="Selected documents don't have enough content to generate flashcards. Please select documents with more text."
-        )
-    
-    all_flashcards = []
-    errors = []
-    
-    for doc_name, text_chunks in document_texts.items():
-        combined_text = "\n\n".join(text_chunks)
-        
-        logging.info(f"Generating conceptual flashcards from {doc_name} ({len(combined_text)} characters, {len(text_chunks)} chunks)")
-        
-        try:
-            cards = generate_flashcards_from_text(
-                combined_text,
-                doc_name,
-                num_cards=max(1, request.num_cards // len(document_texts)),
-                difficulty=request.difficulty
-            )
-            all_flashcards.extend(cards)
-            logging.info(f"Successfully generated {len(cards)} conceptual flashcards from {doc_name}")
-        except ValueError as e:
-            errors.append(f"{doc_name}: {str(e)}")
-            logging.error(f"Failed to generate flashcards from {doc_name}: {e}")
-        except Exception as e:
-            errors.append(f"{doc_name}: Unexpected error - {str(e)}")
-            logging.exception(f"Unexpected error generating flashcards from {doc_name}")
-    
-    if not all_flashcards:
-        error_detail = "Failed to generate any flashcards. " + (
-            "Errors: " + "; ".join(errors) if errors else 
-            "Check if your LLM backend (Ollama/OpenRouter) is running and configured correctly."
-        )
-        raise HTTPException(status_code=500, detail=error_detail)
-    
-    deck_id = save_flashcard_deck(
-        deck_name=request.deck_name,
-        flashcards=all_flashcards
-    )
-    
-    response = {
-        "deck_id": deck_id,
-        "deck_name": request.deck_name,
-        "cards_generated": len(all_flashcards),
-        "status": "success"
-    }
-    
-    if errors:
-        response["warnings"] = errors
-    
-    return response
-
-
-@app.get("/flashcards/decks")
-async def get_flashcard_decks() -> dict:
-    """List all flashcard decks."""
-    decks = list_flashcard_decks()
-    return {"decks": decks, "count": len(decks)}
-
-
-@app.get("/flashcards/decks/{deck_id}")
-async def get_flashcard_deck(deck_id: str) -> FlashcardDeckDetail:
-    """Get a specific flashcard deck with all cards."""
-    deck = load_flashcard_deck(deck_id)
-    if not deck:
-        raise HTTPException(status_code=404, detail="Deck not found")
-    return FlashcardDeckDetail(**deck)
-
-
-@app.delete("/flashcards/decks/{deck_id}")
-async def delete_deck(deck_id: str) -> dict:
-    """Delete a flashcard deck."""
-    success = delete_flashcard_deck(deck_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Deck not found")
-    return {"status": "deleted", "deck_id": deck_id}
-
-
-@app.post("/flashcards/decks/{deck_id}/review")
-async def review_flashcard(deck_id: str, request: FlashcardReviewRequest) -> dict:
-    """Record a flashcard review (correct/incorrect)."""
-    success = update_flashcard_review(deck_id, request.card_id, request.correct)
-    if not success:
-        raise HTTPException(status_code=404, detail="Deck or card not found")
-    return {"status": "recorded", "card_id": request.card_id, "correct": request.correct}
-
-
-@app.get("/flashcards/decks/{deck_id}/export")
-async def export_deck_to_anki(deck_id: str):
-    """Export a flashcard deck to Anki .apkg format."""
-    from fastapi.responses import Response
-    
-    apkg_data = export_to_anki(deck_id)
-    if not apkg_data:
-        raise HTTPException(status_code=404, detail="Deck not found or export failed")
-    
-    deck = load_flashcard_deck(deck_id)
-    if not deck:
-        raise HTTPException(status_code=404, detail="Deck not found")
-    
-    filename = f"{deck['name'].replace(' ', '_')}.apkg"
-    
-    return Response(
-        content=apkg_data,
-        media_type="application/zip",
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}"
-        }
-    )
 
 
 # ============================================================================

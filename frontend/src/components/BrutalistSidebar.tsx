@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { 
   MessageSquare, 
-  Layers, 
   Plus, 
   ChevronLeft, 
   ChevronRight,
@@ -12,8 +11,8 @@ import {
 } from 'lucide-react'
 
 interface BrutalistSidebarProps {
-  currentView: 'chat' | 'flashcards' | 'notes'
-  onViewChange: (view: 'chat' | 'flashcards' | 'notes') => void
+  currentView: 'chat' | 'notes'
+  onViewChange: (view: 'chat' | 'notes') => void
   sessions?: Array<{ id: string; name: string }>
   onSessionSelect?: (sessionId: string) => void
   onNewChat?: () => void
@@ -48,12 +47,6 @@ export default function BrutalistSidebar({
       value: 'notes' as const,
       icon: FileText,
       color: 'yellow'
-    },
-    {
-      title: 'Flashcards',
-      value: 'flashcards' as const,
-      icon: Layers,
-      color: 'blue'
     },
   ]
 

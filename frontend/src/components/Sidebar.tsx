@@ -1,11 +1,11 @@
 'use client'
 
-import { MessageSquare, FileText, Brain, Plus, Clock, Files } from 'lucide-react'
+import { MessageSquare, FileText, Plus, Clock, Files } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface SidebarProps {
-  activeView: 'chat' | 'notes' | 'flashcards' | 'documents'
-  setActiveView: (view: 'chat' | 'notes' | 'flashcards' | 'documents') => void
+  activeView: 'chat' | 'notes' | 'documents'
+  setActiveView: (view: 'chat' | 'notes' | 'documents') => void
   chatHistory: Array<{ id: string; title: string; timestamp: Date }>
   activeChatId: string | null
   setActiveChatId: (id: string) => void
@@ -70,18 +70,6 @@ export function Sidebar({
           <span>Notes</span>
         </button>
 
-        <button
-          onClick={() => setActiveView('flashcards')}
-          className={cn(
-            'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
-            activeView === 'flashcards'
-              ? 'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]'
-              : 'text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]'
-          )}
-        >
-          <Brain className="w-5 h-5" />
-          <span>Flashcards</span>
-        </button>
       </nav>
 
       {/* Chat History - Takes remaining space */}

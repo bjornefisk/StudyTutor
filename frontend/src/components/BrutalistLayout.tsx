@@ -4,10 +4,9 @@ import { useState } from 'react'
 import BrutalistHeader from '@/components/BrutalistHeader'
 import BrutalistSidebar from '@/components/BrutalistSidebar'
 import ChatInterface from '@/components/ChatInterface'
-import FlashcardManager from '@/components/FlashcardManager'
 import NotesManager from '@/components/NotesManager'
 
-type ViewMode = 'chat' | 'flashcards' | 'notes'
+type ViewMode = 'chat' | 'notes'
 
 export default function BrutalistLayout() {
   const [viewMode, setViewMode] = useState<ViewMode>('chat')
@@ -67,12 +66,6 @@ export default function BrutalistLayout() {
                 onSuggestionSearch={(query) => {
                 }}
               />
-            </div>
-          )}
-          
-          {viewMode === 'flashcards' && (
-            <div className="p-6">
-              <FlashcardManager />
             </div>
           )}
           

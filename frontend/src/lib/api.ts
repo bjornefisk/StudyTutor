@@ -8,10 +8,6 @@ import type {
   SessionDescriptor,
   Source,
   SuggestionResponse,
-  FlashcardDeck,
-  FlashcardDeckDetail,
-  FlashcardGenerateRequest,
-  FlashcardGenerateResponse,
   Note,
   NoteCreate,
   NoteUpdate,
@@ -119,73 +115,6 @@ export async function deleteSession(sessionId: string): Promise<void> {
 export async function fetchSuggestions(prefix = '', limit = 6): Promise<string[]> {
   const { data } = await client.post<SuggestionResponse>('/suggestions', { prefix, limit })
   return data.suggestions
-}
-
-// ============================================================================
-// Flashcard API Functions
-// ============================================================================
-
-export async function generateFlashcards(request: FlashcardGenerateRequest): Promise<FlashcardGenerateResponse> {
-  try {
-    const { data } = await client.post<FlashcardGenerateResponse>('/flashcards/generate', request)
-    return data
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(`Flashcard generation failed: ${error.response?.data?.detail || error.message}`)
-    }
-    throw new Error('Flashcard generation failed due to network error')
-  }
-}
-
-export async function listFlashcardDecks(): Promise<FlashcardDeck[]> {
-  const { data } = await client.get<{ decks: FlashcardDeck[]; count: number }>('/flashcards/decks')
-  return data.decks
-}
-
-export async function getFlashcardDeck(deckId: string): Promise<FlashcardDeckDetail> {
-  try {
-    const { data } = await client.get<FlashcardDeckDetail>(`/flashcards/decks/${deckId}`)
-    return data
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(`Failed to load deck: ${error.response?.data?.detail || error.message}`)
-    }
-    throw new Error('Failed to load deck due to network error')
-  }
-}
-
-export async function deleteFlashcardDeck(deckId: string): Promise<void> {
-  await client.delete(`/flashcards/decks/${deckId}`)
-}
-
-export async function reviewFlashcard(deckId: string, cardId: string, correct: boolean): Promise<void> {
-  await client.post(`/flashcards/decks/${deckId}/review`, {
-    card_id: cardId,
-    correct
-  })
-}
-
-export async function exportDeckToAnki(deckId: string, deckName: string): Promise<void> {
-  try {
-    const response = await client.get(`/flashcards/decks/${deckId}/export`, {
-      responseType: 'blob'
-    })
-    
-    // Create a download link
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `${deckName.replace(/\s+/g, '_')}.apkg`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(`Export failed: ${error.response?.data?.detail || error.message}`)
-    }
-    throw new Error('Export failed due to network error')
-  }
 }
 
 // ============================================================================

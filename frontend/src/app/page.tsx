@@ -4,11 +4,10 @@ import { useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import ChatInterface from '@/components/ChatInterface'
 import NotesManager from '@/components/NotesManager'
-import FlashcardManager from '@/components/FlashcardManager'
 import DocumentsGallery from '@/components/DocumentsGallery'
 
 export default function Home() {
-  const [activeView, setActiveView] = useState<'chat' | 'notes' | 'flashcards' | 'documents'>('chat')
+  const [activeView, setActiveView] = useState<'chat' | 'notes' | 'documents'>('chat')
   const [chatHistory, setChatHistory] = useState<Array<{ id: string; title: string; timestamp: Date }>>([])
   const [activeChatId, setActiveChatId] = useState<string | null>(null)
 
@@ -37,7 +36,6 @@ export default function Home() {
         {activeView === 'chat' && <ChatInterface chatId={activeChatId} />}
         {activeView === 'documents' && <DocumentsGallery />}
         {activeView === 'notes' && <NotesManager />}
-        {activeView === 'flashcards' && <FlashcardManager />}
       </main>
     </div>
   )
