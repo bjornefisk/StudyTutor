@@ -21,6 +21,24 @@ def _default_embed_backend() -> str:
 EMBED_BACKEND = _default_embed_backend()
 LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama").lower()
 
+# Wikimedia API Configuration
+WIKIMEDIA_ENABLED = os.getenv("WIKIMEDIA_ENABLED", "true").lower() in ("true", "1", "yes")
+WIKIMEDIA_API_ENDPOINT = os.getenv(
+    "WIKIMEDIA_API_ENDPOINT",
+    "https://en.wikipedia.org/w/api.php"
+)
+WIKIMEDIA_LANGUAGE = os.getenv("WIKIMEDIA_LANGUAGE", "en")
+WIKIMEDIA_MAX_EXTRACT_LENGTH = int(os.getenv("WIKIMEDIA_MAX_EXTRACT_LENGTH", "500"))
+WIKIMEDIA_TIMEOUT_SECONDS = float(os.getenv("WIKIMEDIA_TIMEOUT_SECONDS", "10.0"))
+WIKIMEDIA_CACHE_TTL_SECONDS = int(os.getenv("WIKIMEDIA_CACHE_TTL_SECONDS", "86400"))
+WIKIMEDIA_RATE_LIMIT_CALLS_PER_SECOND = float(
+    os.getenv("WIKIMEDIA_RATE_LIMIT_CALLS_PER_SECOND", "1.0")
+)
+WIKIMEDIA_USER_AGENT = os.getenv(
+    "WIKIMEDIA_USER_AGENT",
+    "StudyTutorRAG/2.0 (https://github.com/user/StudyTutor; studytutor@example.com)"
+)
+
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_CHAT_MODEL = os.getenv("OPENROUTER_CHAT_MODEL", "meta-llama/llama-3.3-70b-instruct:free")

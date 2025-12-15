@@ -196,14 +196,33 @@ export default function Chat({ chatId }: ChatProps) {
                           className="rounded border border-[var(--border)] bg-[var(--background)] p-2 text-xs"
                         >
                           <div className="font-medium text-[var(--foreground)]">
-                            {source.source} • page {source.page}, chunk {source.chunk_index}
+                            {source.source} {source.source_type !== 'wikipedia' && `• page ${source.page}, chunk ${source.chunk_index}`}
                           </div>
                           <div className="mt-1 line-clamp-2 text-[var(--muted-foreground)]">
                             {source.text}
                           </div>
-                          <div className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-                            Relevance {(source.score * 100).toFixed(1)}%
-                          </div>
+                          {source.source_type === 'wikipedia' ? (
+                            <div className="mt-2 border-t border-[var(--border)] pt-2 space-y-1">
+                              <a 
+                                href={source.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                              >
+                                Wikipedia: {source.title}
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                              <div className="text-[10px] text-[var(--muted-foreground)]">
+                                {source.license} • Revision {source.revid}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+                              Relevance {(source.score * 100).toFixed(1)}%
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

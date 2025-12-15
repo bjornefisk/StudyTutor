@@ -103,6 +103,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = Field(default=None, description="Existing session identifier")
     top_k: Optional[int] = Field(default=None, ge=1, le=20, description="Override number of retrieved chunks")
     use_multi_query: Optional[bool] = Field(default=None, description="Enable multi-query retrieval for better results")
+    use_wikipedia: Optional[bool] = Field(default=None, description="Enable Wikipedia knowledge augmentation")
 
 
 class Source(BaseModel):
@@ -111,6 +112,13 @@ class Source(BaseModel):
     chunk_index: int
     score: float
     text: str
+    source_type: str = "local"
+    url: Optional[str] = None
+    title: Optional[str] = None
+    license: Optional[str] = None
+    license_url: Optional[str] = None
+    revid: Optional[int] = None
+    attribution: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -186,12 +194,25 @@ async def root() -> dict:
 @app.get("/health")
 async def health() -> dict:
     """Detailed health information."""
-    return {
+    from tutor.core.config import WIKIMEDIA_ENABLED
+    
+    health_data = {
         "status": "healthy" if _INDEX is not None else "degraded",
         "documents": len(_METAS),
         "embedding_backend": os.getenv("EMBEDDINGS_BACKEND", "sbert"),
         "llm_backend": os.getenv("LLM_BACKEND", "ollama"),
+        "wikimedia_enabled": WIKIMEDIA_ENABLED,
     }
+    
+    # Add cache stats if Wikipedia is enabled
+    if WIKIMEDIA_ENABLED:
+        try:
+            from tutor.core.cache_manager import wikimedia_cache
+            health_data["wikimedia_cache"] = wikimedia_cache.stats()
+        except Exception as e:
+            logger.warning(f"Failed to get cache stats: {e}")
+    
+    return health_data
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -207,6 +228,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
     k = request.top_k or TOP_K
     use_mq = request.use_multi_query if request.use_multi_query is not None else USE_MULTI_QUERY
+    use_wiki = request.use_wikipedia if request.use_wikipedia is not None else True
 
     if _EMBED_FN is None:
         raise HTTPException(status_code=503, detail="Embedding function not initialized.")
@@ -224,27 +246,62 @@ async def chat(request: ChatRequest) -> ChatResponse:
         logging.warning(f"Query planning failed: {exc}, using original query")
         expanded_queries = [prompt]
     
+    # Use hybrid retrieval with Wikipedia
     all_hits = []
-    for query in expanded_queries:
-        hits = retrieve(
-            query, 
-            _INDEX, 
-            _METAS, 
-            _EMBED_FN, 
-            k=k, 
-            use_multi_query=use_mq,
-            num_query_variations=NUM_QUERY_VARIATIONS,
-            bm25=_BM25,
-            bm25_corpus=_BM25_CORPUS,
-            use_hybrid=USE_HYBRID_RETRIEVAL,
-            rrf_k=RRF_K,
-        )
-        all_hits.extend(hits)
+    wiki_result = None
+    
+    if use_wiki:
+        from tutor.core.knowledge_sources import hybrid_retrieve, format_wikipedia_source
+        
+        for query in expanded_queries:
+            local_hits, wiki_data = await hybrid_retrieve(
+                query,
+                _INDEX,
+                _METAS,
+                _EMBED_FN,
+                k=k,
+                use_multi_query=use_mq,
+                num_query_variations=NUM_QUERY_VARIATIONS,
+                bm25=_BM25,
+                bm25_corpus=_BM25_CORPUS,
+                use_hybrid=USE_HYBRID_RETRIEVAL,
+                rrf_k=RRF_K,
+            )
+            all_hits.extend(local_hits)
+            
+            # Store Wikipedia result (only need one)
+            if wiki_data and not wiki_result:
+                wiki_result = wiki_data
+    else:
+        # Use original retrieval
+        for query in expanded_queries:
+            hits = retrieve(
+                query, 
+                _INDEX, 
+                _METAS, 
+                _EMBED_FN, 
+                k=k, 
+                use_multi_query=use_mq,
+                num_query_variations=NUM_QUERY_VARIATIONS,
+                bm25=_BM25,
+                bm25_corpus=_BM25_CORPUS,
+                use_hybrid=USE_HYBRID_RETRIEVAL,
+                rrf_k=RRF_K,
+            )
+            all_hits.extend(hits)
     
     from tutor.core.multi_query import deduplicate_results
     hits = deduplicate_results(all_hits, top_k=k)
     
     context_chunks = [meta for _, meta in hits]
+    
+    # Add Wikipedia content to context if available
+    if wiki_result:
+        context_chunks.append({
+            "source": f"Wikipedia: {wiki_result['title']}",
+            "page": 0,
+            "text": wiki_result["extract"],
+        })
     
     answer = llm_answer(
         prompt, 
@@ -263,9 +320,16 @@ async def chat(request: ChatRequest) -> ChatResponse:
             chunk_index=int(meta.get("chunk_index", -1)),
             score=float(score),
             text=(meta.get("text", "")[:200] + "...") if len(meta.get("text", "")) > 200 else meta.get("text", ""),
+            source_type="local",
         )
         for score, meta in hits
     ]
+    
+    # Add Wikipedia source if available
+    if wiki_result:
+        from tutor.core.knowledge_sources import format_wikipedia_source
+        wiki_source = format_wikipedia_source(wiki_result)
+        sources.append(Source(**wiki_source))
 
     return ChatResponse(
         reply=answer,
@@ -590,6 +654,44 @@ async def export_all_notes_endpoint():
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
+
+
+# ============================================================================
+# Wikimedia Cache Management
+# ============================================================================
+
+@app.get("/admin/cache/stats")
+async def get_cache_stats() -> dict:
+    """Get Wikimedia cache statistics."""
+    from tutor.core.config import WIKIMEDIA_ENABLED
+    
+    if not WIKIMEDIA_ENABLED:
+        raise HTTPException(status_code=400, detail="Wikimedia integration is disabled")
+    
+    try:
+        from tutor.core.cache_manager import wikimedia_cache
+        return wikimedia_cache.stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get cache stats: {e}")
+
+
+@app.post("/admin/cache/clear")
+async def clear_cache() -> dict:
+    """Clear Wikimedia cache."""
+    from tutor.core.config import WIKIMEDIA_ENABLED
+    
+    if not WIKIMEDIA_ENABLED:
+        raise HTTPException(status_code=400, detail="Wikimedia integration is disabled")
+    
+    try:
+        from tutor.core.cache_manager import wikimedia_cache
+        wikimedia_cache.clear()
+        return {
+            "status": "cleared",
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear cache: {e}")
 
 
 if __name__ == "__main__":  # pragma: no cover
