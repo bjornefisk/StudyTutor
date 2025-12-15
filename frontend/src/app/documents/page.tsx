@@ -1,12 +1,12 @@
 "use client"
 
-import DocumentsGallery from '@/components/DocumentsGallery'
+import Documents from '@/components/Documents'
 
 export default function DocumentsPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="mx-auto max-w-6xl py-6">
-        <DocumentsGallery />
+        <Documents />
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 /**
- * ChatInterface Component
+ * Chat Component
  * 
  * The main chat interface for the AI Tutor application. Features include:
  * - Real-time message display with markdown rendering
@@ -19,11 +19,11 @@ import { postChat, fetchSessionHistory, uploadDocuments, triggerIngestion } from
 
 import type { Message } from '@/types'
 
-interface ChatInterfaceProps {
+interface ChatProps {
   chatId: string | null
 }
 
-export default function ChatInterface({ chatId }: ChatInterfaceProps) {
+export default function Chat({ chatId }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [draft, setDraft] = useState('')

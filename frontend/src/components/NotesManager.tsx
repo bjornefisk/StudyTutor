@@ -13,7 +13,7 @@ import type { Note } from '@/types'
 
 type View = 'list' | 'edit' | 'create'
 
-export default function NotesManager() {
+export default function Notes() {
   const [view, setView] = useState<View>('list')
   const [notes, setNotes] = useState<Note[]>([])
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)

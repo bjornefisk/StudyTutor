@@ -5,7 +5,7 @@ import { listDocuments } from '@/lib/api'
 import type { FileInfo } from '@/types'
 import DocumentCard from './DocumentCard'
 
-export default function DocumentsGallery() {
+export default function Documents() {
   const [files, setFiles] = useState<FileInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')

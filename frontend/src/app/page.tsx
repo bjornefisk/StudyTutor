@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
-import ChatInterface from '@/components/ChatInterface'
-import NotesManager from '@/components/NotesManager'
-import DocumentsGallery from '@/components/DocumentsGallery'
+import Chat from '@/components/Chat'
+import Notes from '@/components/Notes'
+import Documents from '@/components/Documents'
 
 export default function Home() {
   const [activeView, setActiveView] = useState<'chat' | 'notes' | 'documents'>('chat')
@@ -33,9 +33,9 @@ export default function Home() {
         onNewChat={handleNewChat}
       />
       <main className="flex-1 overflow-hidden">
-        {activeView === 'chat' && <ChatInterface chatId={activeChatId} />}
-        {activeView === 'documents' && <DocumentsGallery />}
-        {activeView === 'notes' && <NotesManager />}
+        {activeView === 'chat' && <Chat chatId={activeChatId} />}
+        {activeView === 'documents' && <Documents />}
+        {activeView === 'notes' && <Notes />}
       </main>
     </div>
   )

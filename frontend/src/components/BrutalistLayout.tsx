@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from 'react'
-import BrutalistHeader from '@/components/BrutalistHeader'
-import BrutalistSidebar from '@/components/BrutalistSidebar'
-import ChatInterface from '@/components/ChatInterface'
-import NotesManager from '@/components/NotesManager'
+import MobileHeader from '@/components/MobileHeader'
+import Navigation from '@/components/Navigation'
+import Chat from '@/components/Chat'
+import Notes from '@/components/Notes'
 
 type ViewMode = 'chat' | 'notes'
 
-export default function BrutalistLayout() {
+export default function AppLayout() {
   const [viewMode, setViewMode] = useState<ViewMode>('chat')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -16,7 +16,7 @@ export default function BrutalistLayout() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
-      <BrutalistSidebar
+      <Navigation
         currentView={viewMode}
         onViewChange={setViewMode}
         isOpen={sidebarOpen}
@@ -29,7 +29,7 @@ export default function BrutalistLayout() {
       />
 
       {/* Mobile Sidebar */}
-      <BrutalistSidebar
+      <Navigation
         currentView={viewMode}
         onViewChange={(view) => {
           setViewMode(view)
@@ -48,30 +48,19 @@ export default function BrutalistLayout() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <BrutalistHeader onToggleSidebar={() => setMobileSidebarOpen(true)} />
+        <MobileHeader onToggleSidebar={() => setMobileSidebarOpen(true)} />
 
         {/* Page Content */}
         <div className="flex-1 overflow-auto">
           {viewMode === 'chat' && (
             <div className="h-full">
-              <ChatInterface
-                messages={[]}
-                isLoading={false}
-                onSend={async (message) => {
-                  // Handle message sending
-                }}
-                suggestions={[]}
-                onSuggestionSelect={(suggestion) => {
-                }}
-                onSuggestionSearch={(query) => {
-                }}
-              />
+              <Chat chatId={null} />
             </div>
           )}
           
           {viewMode === 'notes' && (
             <div className="p-6">
-              <NotesManager />
+              <Notes />
             </div>
           )}
         </div>

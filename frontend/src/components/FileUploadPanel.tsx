@@ -5,12 +5,12 @@ import { useState } from 'react'
 import { listDocuments, triggerIngestion, uploadDocuments } from '@/lib/api'
 import type { FileInfo } from '@/types'
 
-interface FileUploadPanelProps {
+interface UploadProps {
   onClose: () => void
   onIngestionStarted?: () => void
 }
 
-export default function FileUploadPanel({ onClose, onIngestionStarted }: FileUploadPanelProps) {
+export default function Upload({ onClose, onIngestionStarted }: UploadProps) {
   const [files, setFiles] = useState<File[]>([])
   const [uploaded, setUploaded] = useState<FileInfo[]>([])
   const [status, setStatus] = useState<string>('')

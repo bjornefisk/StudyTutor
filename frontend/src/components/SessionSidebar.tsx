@@ -4,7 +4,7 @@ import clsx from 'clsx'
 
 import type { SessionDescriptor } from '@/types'
 
-interface SessionSidebarProps {
+interface SessionsProps {
   sessions: SessionDescriptor[]
   isLoading: boolean
   currentSessionId: string
@@ -14,7 +14,7 @@ interface SessionSidebarProps {
   onRefresh: () => void
 }
 
-export default function SessionSidebar({
+export default function Sessions({
   sessions,
   isLoading,
   currentSessionId,
@@ -22,7 +22,7 @@ export default function SessionSidebar({
   onSelect,
   onDelete,
   onRefresh
-}: SessionSidebarProps) {
+}: SessionsProps) {
   return (
     <aside className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-lg transition-colors">
       <div className="flex items-center justify-between">
