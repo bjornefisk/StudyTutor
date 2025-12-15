@@ -108,11 +108,11 @@ export default function Notes() {
   // List View
   if (view === 'list') {
     return (
-      <div className="space-y-6 bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="space-y-6 bg-[var(--background)] p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-semibold dark:text-white">Study Notes</h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <h2 className="text-2xl font-semibold text-[var(--foreground)]">Study Notes</h2>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
               Smart note-taking with AI-powered suggestions
             </p>
           </div>
@@ -140,7 +140,7 @@ export default function Notes() {
           />
           {allTags.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Tags:</span>
+              <span className="text-sm font-medium text-[var(--muted-foreground)]">Tags:</span>
               <Button
                 variant={selectedTag === null ? 'default' : 'outline'}
                 size="sm"
@@ -166,17 +166,17 @@ export default function Notes() {
         {isLoading ? (
           <div className="flex items-center justify-center p-12">
             <div className="space-y-4 text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
-              <p className="text-sm text-gray-600">Loading notes...</p>
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[var(--border)] border-t-[var(--primary)]"></div>
+              <p className="text-sm text-[var(--muted-foreground)]">Loading notes...</p>
             </div>
           </div>
         ) : filteredNotes.length === 0 ? (
           <Card className="p-12 text-center">
-            <StickyNote className="mb-4 h-12 w-12 mx-auto text-gray-400" />
-            <h3 className="mb-2 text-lg font-semibold dark:text-white">
+            <StickyNote className="mb-4 h-12 w-12 mx-auto text-[var(--muted-foreground)]" />
+            <h3 className="mb-2 text-lg font-semibold text-[var(--foreground)]">
               {notes.length === 0 ? 'No Notes Yet' : 'No Matching Notes'}
             </h3>
-            <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mb-6 text-sm text-[var(--muted-foreground)]">
               {notes.length === 0
                 ? 'Start taking notes with AI-powered suggestions from your documents'
                 : 'Try a different search or filter'}
@@ -201,7 +201,7 @@ export default function Notes() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Preview */}
-                  <p className="line-clamp-3 text-sm text-gray-700 dark:text-gray-300">
+                  <p className="line-clamp-3 text-sm text-[var(--foreground)]">
                     {note.content || 'Empty note'}
                   </p>
 
@@ -223,7 +223,7 @@ export default function Notes() {
 
                   {/* Sources Badge */}
                   {note.linked_sources.length > 0 && (
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="text-xs text-[var(--muted-foreground)]">
                       🔗 {note.linked_sources.length} linked {note.linked_sources.length === 1 ? 'source' : 'sources'}
                     </div>
                   )}
@@ -250,7 +250,7 @@ export default function Notes() {
                         onClick={() => handleDelete(note.id)}
                         variant="outline"
                         size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -267,7 +267,7 @@ export default function Notes() {
 
   // Edit/Create View
   return (
-    <div className="space-y-6 bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="space-y-6 bg-[var(--background)] p-6">
       <div>
         <Button
           onClick={() => {
@@ -279,10 +279,10 @@ export default function Notes() {
         >
           ← Back to Notes
         </Button>
-        <h2 className="text-2xl font-semibold dark:text-white">
+        <h2 className="text-2xl font-semibold text-[var(--foreground)]">
           {view === 'create' ? 'New Note' : 'Edit Note'}
         </h2>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           AI will suggest related content from your documents as you type
         </p>
       </div>
