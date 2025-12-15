@@ -50,9 +50,10 @@ def should_query_wikimedia(query: str) -> bool:
             return True
     
     # Check for likely named entities (capitalized multi-word phrases)
+    # Exclude single letter words like "I" which are often capitalized for grammar
     words = query.split()
-    capitalized = sum(1 for w in words if w[0].isupper() if w)
-    if capitalized >= 2:  # At least 2 capitalized words suggests named entity
+    capitalized = sum(1 for w in words if len(w) > 1 and w[0].isupper())
+    if capitalized >= 2:  # At least 2 capitalized words (excluding "I") suggests named entity
         return True
     
     return False
