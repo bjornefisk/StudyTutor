@@ -111,41 +111,40 @@ export default function Notes() {
       <div className="space-y-6 bg-gray-50 dark:bg-gray-900 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-black text-3xl uppercase tracking-tight dark:text-white">Study Notes</h2>
-            <p className="mt-1 font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">
+            <h2 className="text-2xl font-semibold dark:text-white">Study Notes</h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               Smart note-taking with AI-powered suggestions
             </p>
           </div>
           {notes.length > 0 && (
             <div className="flex gap-2">
-              <Button onClick={handleExportAll} variant="outline" className="border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 hover:text-black dark:hover:text-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] inline-flex items-center gap-2">
+              <Button onClick={handleExportAll} variant="outline" className="inline-flex items-center gap-2">
                 <Download className="h-4 w-4" /> Export All
               </Button>
-              <Button onClick={() => setView('create')} className="border-2 border-black bg-red-600 font-bold uppercase text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] inline-flex items-center gap-2">
+              <Button onClick={() => setView('create')} className="inline-flex items-center gap-2">
                 <FilePlus className="h-4 w-4" /> New Note
               </Button>
             </div>
           )}
         </div>
 
-        <div className="h-1 bg-black" />
+        <Separator />
 
         {/* Search and Filters */}
         <div className="flex gap-4">
           <Input
-            placeholder="SEARCH NOTES..."
+            placeholder="Search notes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase tracking-wide placeholder:text-black/40 dark:placeholder:text-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+            className="max-w-sm"
           />
           {allTags.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">Tags:</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Tags:</span>
               <Button
                 variant={selectedTag === null ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedTag(null)}
-                className="border-2 border-black font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
               >
                 All
               </Button>
@@ -155,7 +154,6 @@ export default function Notes() {
                   variant={selectedTag === tag ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedTag(tag)}
-                  className="border-2 border-black font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                 >
                   {tag}
                 </Button>
@@ -168,23 +166,23 @@ export default function Notes() {
         {isLoading ? (
           <div className="flex items-center justify-center p-12">
             <div className="space-y-4 text-center">
-              <div className="mx-auto h-8 w-8 animate-spin border-4 border-black border-t-transparent"></div>
-              <p className="font-bold uppercase tracking-wide text-black/60">Loading notes...</p>
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+              <p className="text-sm text-gray-600">Loading notes...</p>
             </div>
           </div>
         ) : filteredNotes.length === 0 ? (
-          <Card className="border-4 border-black bg-white dark:bg-gray-800 p-12 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <StickyNote className="mb-4 h-12 w-12 mx-auto text-black dark:text-white" />
-            <h3 className="mb-2 font-black text-xl uppercase dark:text-white">
+          <Card className="p-12 text-center">
+            <StickyNote className="mb-4 h-12 w-12 mx-auto text-gray-400" />
+            <h3 className="mb-2 text-lg font-semibold dark:text-white">
               {notes.length === 0 ? 'No Notes Yet' : 'No Matching Notes'}
             </h3>
-            <p className="mb-6 font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">
+            <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
               {notes.length === 0
                 ? 'Start taking notes with AI-powered suggestions from your documents'
                 : 'Try a different search or filter'}
             </p>
             {notes.length === 0 && (
-              <Button onClick={() => setView('create')} className="border-2 border-black bg-red-600 font-bold uppercase text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+              <Button onClick={() => setView('create')}>
                 Create First Note
               </Button>
             )}
@@ -192,18 +190,18 @@ export default function Notes() {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredNotes.map((note) => (
-              <Card key={note.id} className="border-4 border-black bg-white dark:bg-gray-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <Card key={note.id} className="transition-shadow hover:shadow-lg">
                 <CardHeader>
-                  <CardTitle className="line-clamp-2 font-black text-lg uppercase dark:text-white">
+                  <CardTitle className="line-clamp-2 text-base">
                     {note.title}
                   </CardTitle>
-                  <CardDescription className="font-bold text-xs uppercase tracking-wide text-black/60 dark:text-gray-400">
+                  <CardDescription className="text-xs">
                     {formatDate(note.updated_at)} • {note.word_count} words
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Preview */}
-                  <p className="line-clamp-3 text-sm font-bold text-black/70 dark:text-gray-300">
+                  <p className="line-clamp-3 text-sm text-gray-700 dark:text-gray-300">
                     {note.content || 'Empty note'}
                   </p>
 
@@ -211,12 +209,12 @@ export default function Notes() {
                   {note.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {note.tags.slice(0, 3).map(tag => (
-                        <Badge key={tag} variant="secondary" className="border-2 border-black bg-yellow-400 font-bold uppercase text-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                        <Badge key={tag} variant="secondary">
                           {tag}
                         </Badge>
                       ))}
                       {note.tags.length > 3 && (
-                        <Badge variant="outline" className="border-2 border-black bg-white dark:bg-gray-700 font-bold uppercase text-black dark:text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                        <Badge variant="outline">
                           +{note.tags.length - 3}
                         </Badge>
                       )}
@@ -225,7 +223,7 @@ export default function Notes() {
 
                   {/* Sources Badge */}
                   {note.linked_sources.length > 0 && (
-                    <div className="font-bold text-xs uppercase tracking-wide text-black/60 dark:text-gray-400">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
                       🔗 {note.linked_sources.length} linked {note.linked_sources.length === 1 ? 'source' : 'sources'}
                     </div>
                   )}
@@ -234,25 +232,25 @@ export default function Notes() {
                   <div className="flex flex-col gap-2 pt-2">
                     <Button
                       onClick={() => handleEdit(note)}
-                      className="w-full border-2 border-black bg-blue-600 font-bold uppercase text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                      className="w-full"
                       size="sm"
                     >
-                      <span className="inline-flex items-center gap-2"><PenSquare className="h-4 w-4" /> Edit Note</span>
+                      <PenSquare className="h-4 w-4 mr-2" /> Edit Note
                     </Button>
                     <div className="flex gap-2">
                       <Button
                         onClick={() => handleExport(note)}
                         variant="outline"
                         size="sm"
-                        className="flex-1 border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:bg-yellow-400 hover:text-black dark:hover:text-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                        className="flex-1"
                       >
-                        <DownloadCloud className="h-4 w-4" /> Export
+                        <DownloadCloud className="h-4 w-4 mr-2" /> Export
                       </Button>
                       <Button
                         onClick={() => handleDelete(note.id)}
                         variant="outline"
                         size="sm"
-                        className="border-2 border-black bg-white dark:bg-gray-800 font-bold text-red-600 dark:text-red-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:bg-red-600 hover:text-white hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -277,19 +275,19 @@ export default function Notes() {
             setSelectedNote(null)
           }}
           variant="ghost"
-          className="mb-4 border-2 border-black bg-white dark:bg-gray-800 dark:text-white font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 hover:text-black hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+          className="mb-4"
         >
           ← Back to Notes
         </Button>
-        <h2 className="font-black text-3xl uppercase tracking-tight dark:text-white">
+        <h2 className="text-2xl font-semibold dark:text-white">
           {view === 'create' ? 'New Note' : 'Edit Note'}
         </h2>
-        <p className="mt-1 font-bold text-sm uppercase tracking-wide text-black/60 dark:text-gray-400">
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           AI will suggest related content from your documents as you type
         </p>
       </div>
 
-      <div className="h-1 bg-black" />
+      <Separator />
 
       <NoteEditor
         note={selectedNote}
