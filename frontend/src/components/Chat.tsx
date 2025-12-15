@@ -165,15 +165,62 @@ export default function Chat({ chatId }: ChatProps) {
               >
                 <div
                   className={clsx(
-                    'max-w-2xl rounded-lg px-4 py-3 shadow-sm',
+                    'max-w-2xl rounded-lg px-5 py-4 shadow-sm transition-all',
                     message.role === 'user'
-                      ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
-                      : 'bg-[var(--muted)] text-[var(--foreground)]'
+                      ? 'bg-[var(--primary)] text-[var(--primary-foreground)] rounded-bl-none'
+                      : 'bg-[var(--muted)] text-[var(--foreground)] rounded-tl-none border border-[var(--border)]'
                   )}
                 >
                   {message.role === 'assistant' ? (
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                    <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-li:my-1 prose-ul:my-2 prose-ol:my-2 prose-code:bg-[var(--accent)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-[var(--card)] prose-pre:border prose-pre:border-[var(--border)] prose-pre:p-4 prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:hover:underline">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="text-lg font-bold mt-4 mb-2" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="text-base font-bold mt-3 mb-2" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="text-sm font-bold mt-2 mb-1" {...props} />,
+                          p: ({node, ...props}) => <p className="my-2 leading-relaxed" {...props} />,
+                          ul: ({node, ...props}) => <ul className="my-2 list-disc list-inside space-y-1" {...props} />,
+                          ol: ({node, ...props}) => <ol className="my-2 list-decimal list-inside space-y-1" {...props} />,
+                          li: ({node, ...props}) => <li className="my-1" {...props} />,
+                          code: ({node, inline, ...props}) => 
+                            inline ? (
+                              <code className="bg-[var(--accent)] text-[var(--accent-foreground)] px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
+                            ) : (
+                              <code className="block font-mono text-sm" {...props} />
+                            ),
+                          pre: ({node, ...props}) => (
+                            <pre className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 overflow-x-auto my-2" {...props} />
+                          ),
+                          blockquote: ({node, ...props}) => (
+                            <blockquote className="border-l-4 border-[var(--primary)] pl-4 py-2 my-2 italic text-[var(--muted-foreground)]" {...props} />
+                          ),
+                          a: ({node, href, ...props}) => (
+                            <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1" {...props} >
+                              {props.children}
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          ),
+                          table: ({node, ...props}) => (
+                            <div className="my-2 overflow-x-auto border border-[var(--border)] rounded-lg">
+                              <table className="w-full border-collapse text-sm" {...props} />
+                            </div>
+                          ),
+                          thead: ({node, ...props}) => (
+                            <thead className="bg-[var(--accent)] text-[var(--accent-foreground)]" {...props} />
+                          ),
+                          th: ({node, ...props}) => (
+                            <th className="border border-[var(--border)] px-3 py-2 text-left font-semibold" {...props} />
+                          ),
+                          td: ({node, ...props}) => (
+                            <td className="border border-[var(--border)] px-3 py-2" {...props} />
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
                     </div>
                   ) : (
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">

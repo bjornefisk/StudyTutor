@@ -1,43 +1,172 @@
-# OS / editor
+# OS & Editor
 .DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.iml
+*.iws
+*.ipr
+
+# Vim/Emacs
+*~
 *.swp
 *.swo
-.vscode/
-.idea/
+\#*\#
+.\#*
 
-# Python artifacts
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
+*.egg
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+*.pyc
+.pythonhistory
+
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# Testing & Coverage
 .mypy_cache/
 .pytest_cache/
-.coverage*
+.tox/
+.hypothesis/
+.coverage
+.coverage.*
 htmlcov/
+coverage.xml
+*.cover
+junit/
+.nox/
 
-# Environment files
-.env
-.env.*
-frontend/.env*
-
-# Node / Next.js artifacts
+# Node
 node_modules/
-.next/
-.turbo/
-out/
-dist/
+frontend/node_modules/
 npm-debug.log*
+yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-*.log
+pnpm-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Application storage & cache
-storage/**
-!storage/.gitkeep
+# Next.js
+.next/
+frontend/.next/
+out/
+dist/
+build/
+.vercel/
+.turbo/
 
-# Data (keep repo light and private)
-data/**
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.p12
+credentials.json
+
+# Storage & Data
+storage/chats/*.jsonl
+storage/chats/*.meta.json
+storage/notes/
+storage/pubchem_cache/
+storage/config.json
+storage/faiss.index
+storage/metadata.jsonl
+!storage/*/.gitkeep
+
+data/
 !data/.gitkeep
 
-# Notebooks checkpoints
+# Vector indices
+*.faiss
+*.index
+metadata.jsonl
+config.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Logs
+*.log
+*.log.*
+logs/
+
+# Notebooks
 .ipynb_checkpoints/
+.jupyter/
+.jupyterlab/
+
+# Build artifacts
+.cache/
+*.tsbuildinfo
+.nuxt/
+
+# Misc
+.direnv/
+.envrc.local
+.tool-versions.local
+docker-compose.override.yml
+.git/hooks/pre-commit
+
+# Project-specific
+models/
+cache/
+ollama/
+*.gguf
+*.model
+*.pkl
+*.pickle
+*.joblib
+.wiki/
+ingest.log
+process.log
+local_*.py
+dev_*.py
+test_manual.py

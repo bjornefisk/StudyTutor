@@ -1,0 +1,9 @@
+{
+  "created_at": "2025-11-11T17:41:18.134064Z",
+  "embed_backend": "sbert",
+  "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "dim": 384,
+  "meta_path": "storage/metadata.jsonl",
+  "index_path": "storage/faiss.index",
+  "pubchem_cache": "storage/pubchem_cache"
+}
