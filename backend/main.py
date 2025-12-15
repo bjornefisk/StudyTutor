@@ -14,11 +14,15 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, List, Optional
+
+# Add parent directory to path so tutor module can be imported
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
